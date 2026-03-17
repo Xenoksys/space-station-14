@@ -1,0 +1,52 @@
+- type: entity
+  id: SlotMachine
+  parent: BaseMachine
+  name: slot machine
+  description: Risk your salary for a dream.
+  components:
+  - type: Sprite
+    sprite: SS220/Shitspawn/Structures/Machines/slot_machine.rsi
+    state: machine
+    noRot: false
+  - type: Transform
+    noRot: false
+  - type: SlotMachine
+    insertSound: /Audio/Machines/id_insert.ogg
+    spinSound: /Audio/SS220/Shitspawn/SlotMachine/slot_spin.ogg
+    winSound: /Audio/SS220/Shitspawn/SlotMachine/slot_win.ogg
+    reelPools:
+    - [blue_cherry, blue_cherry, blue_cherry, blue_cherry, blue_cherry, blue_cherry, blue_cherry, blue_cherry, blue_cherry, apple, apple, apple, apple, apple, apple, apple, cherry, cherry, cherry, cherry, cherry, cherry, bell, bell, bell, bell, bell, seven, seven, seven, seven, seven, diamond, diamond, diamond]
+    - [blue_cherry, blue_cherry, blue_cherry, blue_cherry, blue_cherry, blue_cherry, blue_cherry, blue_cherry, apple, apple, apple, apple, apple, apple, apple, cherry, cherry, cherry, cherry, cherry, cherry, bell, bell, bell, bell, seven, seven, seven, diamond, diamond]
+    - [blue_cherry, blue_cherry, blue_cherry, blue_cherry, blue_cherry, blue_cherry, blue_cherry, blue_cherry, apple, apple, apple, apple, apple, apple, apple, cherry, cherry, cherry, cherry, cherry, bell, bell, bell, bell, seven, seven, seven, diamond]
+    rules:
+    - symbols: [diamond, diamond, diamond]
+      multiplier: 100
+      result: Jackpot
+    - symbols: [seven, seven, seven]
+      multiplier: 50
+      result: Triple7
+    - symbols: [bell, bell, bell]
+      multiplier: 30
+    - symbols: [cherry, cherry, cherry]
+      multiplier: 20
+    - symbols: [apple, apple, apple]
+      multiplier: 15
+    - symbols: [blue_cherry, blue_cherry, blue_cherry]
+      multiplier: 10
+    - symbols: [apple, apple]
+      index: 0
+      multiplier: 2
+      result: ApplePair
+    - symbols: [cherry, cherry]
+      index: 1
+      multiplier: 2
+      result: CherryPair
+  - type: ActivatableUI
+    key: enum.SlotMachineUiKey.Key
+  - type: UserInterface
+    interfaces:
+      enum.SlotMachineUiKey.Key:
+        type: SlotMachineBoundUserInterface
+  - type: Clickable
+  - type: InteractionOutline
+  - type: Physics
