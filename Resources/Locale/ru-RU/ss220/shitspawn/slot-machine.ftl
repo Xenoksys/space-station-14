@@ -2,7 +2,6 @@ ent-SlotMachine = слот машина
     .desc = Рискни зарплатой ради мечты.
 
 slot-machine-popup-spinning = Подождите окончания вращения!
-slot-machine-popup-no-item = В активной руке ничего нет!
 slot-machine-popup-no-credits = В активной руке нет кредитов!
 slot-machine-popup-inserted = Внесено { $amount } кредитов
 slot-machine-popup-no-funds = Недостаточно кредитов!
