@@ -8,33 +8,33 @@
     rules:
       - symbols: ["seven", "seven", "seven"]
         multiplier: 777
-        result: Jackpot
+        winText: "slot-machine-ui-win-jackpot"
       - symbols: ["seven", "seven", "seven"]
         multiplier: 100
-        result: Triple7
+        winText: "slot-machine-ui-win-777"
       - symbols: ["bell", "bell", "bell"]
         multiplier: 20
-        result: Triple
+        winText: "slot-machine-ui-win-triple"
       - symbols: ["cherry", "cherry", "cherry"]
         multiplier: 10
-        result: Triple
+        winText: "slot-machine-ui-win-cherries"
       - symbols: ["apple", "apple", "apple"]
         multiplier: 8
-        result: Triple
+        winText: "slot-machine-ui-win-apples"
       - symbols: ["blue_cherry", "blue_cherry", "blue_cherry"]
         multiplier: 15
-        result: Triple
+        winText: "slot-machine-ui-win-triple"
       - symbols: ["diamond", "diamond", "diamond"]
         multiplier: 50
-        result: Triple
+        winText: "slot-machine-ui-win-triple"
       - symbols: ["cherry", "cherry"]
         index: 0
         multiplier: 3
-        result: CherryPair
+        winText: "slot-machine-ui-win-cherries"
       - symbols: ["apple", "apple"]
         index: 0
         multiplier: 2
-        result: ApplePair
+        winText: "slot-machine-ui-win-apples"
     reelPools:
       - ["cherry", "apple", "blue_cherry", "bell", "seven", "diamond"]
       - ["cherry", "apple", "blue_cherry", "bell", "seven", "diamond"]

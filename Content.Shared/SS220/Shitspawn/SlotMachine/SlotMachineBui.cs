@@ -12,7 +12,8 @@ public enum SlotMachineUiKey
 public sealed class SlotMachineBoundUserInterfaceState(
     List<string> reels,
     int storedCredits,
-    SlotMachineResult lastResult,
+    bool isWin,
+    string winText,
     int lastBet,
     int lastPayout,
     bool isSpinning,
@@ -21,7 +22,8 @@ public sealed class SlotMachineBoundUserInterfaceState(
 {
     public List<string> Reels { get; } = reels;
     public int StoredCredits { get; } = storedCredits;
-    public SlotMachineResult LastResult { get; } = lastResult;
+    public bool IsWin { get; } = isWin;
+    public string WinText { get; } = winText;
     public int LastBet { get; } = lastBet;
     public int LastPayout { get; } = lastPayout;
     public bool IsSpinning { get; } = isSpinning;

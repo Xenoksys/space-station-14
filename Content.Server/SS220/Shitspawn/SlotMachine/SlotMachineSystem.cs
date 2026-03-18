@@ -49,12 +49,13 @@ public sealed class SlotMachineSystem : EntitySystem
 
             comp.HasPendingResult = false;
             comp.Reels = comp.PendingReels;
-            comp.LastResult = comp.PendingResult;
+            comp.IsWin = comp.PendingIsWin;
+            comp.WinText = comp.PendingWinText;
             comp.LastPayout = comp.PendingPayout;
             comp.StoredCredits += comp.PendingPayout;
             Dirty(uid, comp);
 
-            if (comp.LastResult != SlotMachineResult.Lose)
+            if (comp.IsWin)
                 _audio.PlayPvs(comp.WinSound, uid);
 
             UpdateUI(uid, comp, spinning: false);
@@ -116,10 +117,11 @@ public sealed class SlotMachineSystem : EntitySystem
             reels.Add(_random.Pick(pool));
         }
 
-        var (result, payout) = CalculateResult(entity.Owner, entity.Comp, reels, bet);
+        var (isWin, winText, payout) = CalculateResult(entity.Owner, entity.Comp, reels, bet);
 
         entity.Comp.PendingReels = reels;
-        entity.Comp.PendingResult = result;
+        entity.Comp.PendingIsWin = isWin;
+        entity.Comp.PendingWinText = winText;
         entity.Comp.PendingPayout = payout;
         entity.Comp.HasPendingResult = true;
         entity.Comp.SpinEndTime = _timing.CurTime + SpinDuration;
@@ -154,12 +156,12 @@ public sealed class SlotMachineSystem : EntitySystem
         _uiSystem.SetUiState(uid, SlotMachineUiKey.Key,
             new SlotMachineBoundUserInterfaceState(
                 comp.Reels, comp.StoredCredits,
-                spinning ? SlotMachineResult.None : comp.LastResult,
+                comp.IsWin, comp.WinText,
                 comp.LastBet, comp.LastPayout, spinning,
                 comp.Rules, comp.ReelPools));
     }
 
-    private (SlotMachineResult result, int payout) CalculateResult(EntityUid uid, SlotMachineComponent comp, List<string> reels, int bet)
+    private (bool isWin, string winText, int payout) CalculateResult(EntityUid uid, SlotMachineComponent comp, List<string> reels, int bet)
     {
         foreach (var rule in comp.Rules)
         {
@@ -198,9 +200,9 @@ public sealed class SlotMachineSystem : EntitySystem
             }
 
             if (match)
-                return (rule.Result, bet * rule.Multiplier);
+                return (true, rule.WinText, bet * rule.Multiplier);
         }
 
-        return (SlotMachineResult.Lose, 0);
+        return (false, "", 0);
     }
 }

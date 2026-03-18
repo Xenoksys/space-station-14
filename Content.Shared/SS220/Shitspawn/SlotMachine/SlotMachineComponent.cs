@@ -31,7 +31,10 @@ public sealed partial class SlotMachineComponent : Component
     public int LastPayout;
 
     [AutoNetworkedField]
-    public SlotMachineResult LastResult = SlotMachineResult.None;
+    public bool IsWin = false;
+
+    [AutoNetworkedField]
+    public string WinText = "";
 
     [DataField]
     public SoundSpecifier InsertSound = new SoundPathSpecifier("/Audio/Machines/id_insert.ogg");
@@ -44,7 +47,8 @@ public sealed partial class SlotMachineComponent : Component
 
     public bool HasPendingResult;
     public List<string> PendingReels = new() { "seven", "seven", "seven" };
-    public SlotMachineResult PendingResult = SlotMachineResult.None;
+    public bool PendingIsWin = false;
+    public string PendingWinText = "";
     public int PendingPayout;
     public TimeSpan SpinEndTime;
 }
@@ -62,17 +66,5 @@ public sealed partial class SlotMachineRule
     public int Multiplier;
 
     [DataField]
-    public SlotMachineResult Result = SlotMachineResult.Triple;
-}
-
-[Serializable, NetSerializable]
-public enum SlotMachineResult
-{
-    None,
-    Lose,
-    ApplePair,
-    CherryPair,
-    Triple,
-    Triple7,
-    Jackpot
+    public string WinText = "";
 }
