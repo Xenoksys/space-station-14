@@ -42,18 +42,7 @@
   - type: Sprite
     sprite: SS220/Shitspawn/Structures/Machines/slot_machine.rsi
     layers:
-    - state: slot_machine_off
-      map: ["enum.PowerDeviceVisualLayers.Powered"]
-    - state: slot_machine_on
-      map: ["enum.PowerDeviceVisualLayers.Powered"]
-      visible: false
-  - type: Appearance
-  - type: GenericVisualizer
-    visuals:
-      enum.PowerDeviceVisuals.Powered:
-        enum.PowerDeviceVisualLayers.Powered:
-          True: { visible: true }
-          False: { visible: false }
+    - state: machine
   - type: ActivatableUI
     key: enum.SlotMachineUiKey.Key
   - type: UserInterface
