@@ -1,14 +1,17 @@
 using Content.Shared.SS220.Shitspawn.SlotMachine;
 using Content.Client.SS220.Shitspawn.SlotMachine.Ui;
-using JetBrains.Annotations;
 using Robust.Client.UserInterface;
 
 namespace Content.Client.SS220.Shitspawn.SlotMachine;
 
-[UsedImplicitly]
-public sealed class SlotMachineBoundUserInterface(EntityUid owner, Enum uiKey) : BoundUserInterface(owner, uiKey)
+public sealed class SlotMachineBoundUserInterface : BoundUserInterface
 {
     [ViewVariables] private SlotMachineWindow? _window;
+
+    public SlotMachineBoundUserInterface(EntityUid owner, Enum uiKey)
+        : base(owner, uiKey)
+    {
+    }
 
     protected override void Open()
     {

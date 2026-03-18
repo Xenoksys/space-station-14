@@ -5,7 +5,7 @@ namespace Content.Shared.SS220.Shitspawn.SlotMachine;
 [Serializable, NetSerializable]
 public enum SlotMachineUiKey
 {
-    Key,
+    Key
 }
 
 [Serializable, NetSerializable]

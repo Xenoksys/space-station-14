@@ -1,5 +1,6 @@
 using Robust.Shared.Audio;
 using Robust.Shared.GameStates;
+using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization;
 
 namespace Content.Shared.SS220.Shitspawn.SlotMachine;
@@ -8,8 +9,8 @@ namespace Content.Shared.SS220.Shitspawn.SlotMachine;
 public sealed partial class SlotMachineComponent : Component
 {
     public const int MinBet = 100;
-    public const string CreditStackId = "Credit";
-    public const string CashPrototypeId = "SpaceCash";
+    public const ProtoId<StackPrototype> CreditStackId = "Credit";
+    public const ProtoId<EntityPrototype> CashPrototypeId = "SpaceCash";
 
     [DataField, AutoNetworkedField]
     public List<string> Reels = new() { "seven", "seven", "seven" };

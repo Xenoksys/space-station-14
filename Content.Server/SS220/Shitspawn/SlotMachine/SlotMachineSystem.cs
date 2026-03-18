@@ -1,4 +1,3 @@
-using System.Linq;
 using Content.Shared.SS220.Shitspawn.SlotMachine;
 using Content.Shared.Stacks;
 using Content.Shared.UserInterface;
@@ -29,13 +28,12 @@ public sealed class SlotMachineSystem : EntitySystem
         base.Initialize();
         SubscribeLocalEvent<SlotMachineComponent, AfterActivatableUIOpenEvent>(OnAfterUIOpen);
 
-        Subs.BuiEvents<SlotMachineComponent>(SlotMachineUiKey.Key,
-            subs =>
-            {
-                subs.Event<SlotMachineSpinMessage>(OnSpin);
-                subs.Event<SlotMachineInsertMessage>(OnInsert);
-                subs.Event<SlotMachineCollectMessage>(OnCollect);
-            });
+        Subs.BuiEvents<SlotMachineComponent>(SlotMachineUiKey.Key, subs =>
+        {
+            subs.Event<SlotMachineSpinMessage>(OnSpin);
+            subs.Event<SlotMachineInsertMessage>(OnInsert);
+            subs.Event<SlotMachineCollectMessage>(OnCollect);
+        });
     }
 
     public override void Update(float frameTime)
@@ -85,15 +83,13 @@ public sealed class SlotMachineSystem : EntitySystem
         }
 
         var amountToTake = Math.Min(args.Amount, stack.Count);
-        if (!_stack.Use(item.Value, amountToTake, stack))
+        if (!_stack.Use(item!.Value, amountToTake, stack))
             return;
 
         entity.Comp.StoredCredits += amountToTake;
         Dirty(entity.Owner, entity.Comp);
         _audio.PlayPvs(entity.Comp.InsertSound, entity.Owner);
-        _popup.PopupEntity(Loc.GetString("slot-machine-popup-inserted", ("amount", amountToTake)),
-            args.Actor,
-            args.Actor);
+        _popup.PopupEntity(Loc.GetString("slot-machine-popup-inserted", ("amount", amountToTake)), args.Actor, args.Actor);
         UpdateUI(entity.Owner, entity.Comp, spinning: false);
     }
 
@@ -120,7 +116,7 @@ public sealed class SlotMachineSystem : EntitySystem
             reels.Add(_random.Pick(pool));
         }
 
-        var (result, payout) = CalculateResult(entity.Comp, reels, bet);
+        var (result, payout) = CalculateResult(entity.Owner, entity.Comp, reels, bet);
 
         entity.Comp.PendingReels = reels;
         entity.Comp.PendingResult = result;
@@ -147,9 +143,7 @@ public sealed class SlotMachineSystem : EntitySystem
         if (TryComp<StackComponent>(money, out var stack))
             _stack.SetCount(money, entity.Comp.StoredCredits, stack);
 
-        _popup.PopupEntity(Loc.GetString("slot-machine-popup-collected", ("amount", entity.Comp.StoredCredits)),
-            args.Actor,
-            args.Actor);
+        _popup.PopupEntity(Loc.GetString("slot-machine-popup-collected", ("amount", entity.Comp.StoredCredits)), args.Actor, args.Actor);
         entity.Comp.StoredCredits = 0;
         Dirty(entity.Owner, entity.Comp);
         UpdateUI(entity.Owner, entity.Comp, spinning: false);
@@ -157,45 +151,50 @@ public sealed class SlotMachineSystem : EntitySystem
 
     private void UpdateUI(EntityUid uid, SlotMachineComponent comp, bool spinning)
     {
-        _uiSystem.SetUiState(uid,
-            SlotMachineUiKey.Key,
+        _uiSystem.SetUiState(uid, SlotMachineUiKey.Key,
             new SlotMachineBoundUserInterfaceState(
-                comp.Reels,
-                comp.StoredCredits,
+                comp.Reels, comp.StoredCredits,
                 spinning ? SlotMachineResult.None : comp.LastResult,
-                comp.LastBet,
-                comp.LastPayout,
-                spinning,
-                comp.Rules,
-                comp.ReelPools));
+                comp.LastBet, comp.LastPayout, spinning,
+                comp.Rules, comp.ReelPools));
     }
 
-    private static (SlotMachineResult result, int payout) CalculateResult(SlotMachineComponent comp,
-        List<string> reels,
-        int bet)
+    private (SlotMachineResult result, int payout) CalculateResult(EntityUid uid, SlotMachineComponent comp, List<string> reels, int bet)
     {
         foreach (var rule in comp.Rules)
         {
             if (rule.Symbols == null || rule.Symbols.Count == 0)
                 continue;
 
-            var match = true;
+            bool match = true;
             if (rule.Index.HasValue)
             {
                 var idx = rule.Index.Value;
                 if (idx < 0 || idx + rule.Symbols.Count > reels.Count)
                     continue;
 
-                if (rule.Symbols.Where((t, i) => reels[idx + i] != t).Any())
-                    match = false;
+                for (var i = 0; i < rule.Symbols.Count; i++)
+                {
+                    if (reels[idx + i] != rule.Symbols[i])
+                    {
+                        match = false;
+                        break;
+                    }
+                }
             }
             else
             {
                 if (rule.Symbols.Count != reels.Count)
                     continue;
 
-                if (reels.Where((t, i) => t != rule.Symbols[i]).Any())
-                    match = false;
+                for (var i = 0; i < reels.Count; i++)
+                {
+                    if (reels[i] != rule.Symbols[i])
+                    {
+                        match = false;
+                        break;
+                    }
+                }
             }
 
             if (match)
