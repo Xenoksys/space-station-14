@@ -18,7 +18,7 @@ public sealed class SlotMachineBoundUserInterfaceState(
     int lastPayout,
     bool isSpinning,
     List<SlotMachineRule> rules,
-    List<List<string>> reelPools) : BoundUserInterfaceState
+    List<SlotMachineReelDef> reelPools) : BoundUserInterfaceState
 {
     public List<string> Reels { get; } = reels;
     public int StoredCredits { get; } = storedCredits;
@@ -28,7 +28,7 @@ public sealed class SlotMachineBoundUserInterfaceState(
     public int LastPayout { get; } = lastPayout;
     public bool IsSpinning { get; } = isSpinning;
     public List<SlotMachineRule> Rules { get; } = rules;
-    public List<List<string>> ReelPools { get; } = reelPools;
+    public List<SlotMachineReelDef> ReelPools { get; } = reelPools;
 }
 
 [Serializable, NetSerializable]

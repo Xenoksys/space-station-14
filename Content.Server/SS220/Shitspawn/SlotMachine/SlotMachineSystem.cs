@@ -114,7 +114,15 @@ public sealed class SlotMachineSystem : EntitySystem
         var reels = new List<string>();
         foreach (var pool in entity.Comp.ReelPools)
         {
-            reels.Add(_random.Pick(pool));
+            var weightedSymbols = new List<string>();
+            foreach (var symbol in pool.Symbols)
+            {
+                for (int i = 0; i < symbol.Weight; i++)
+                {
+                    weightedSymbols.Add(symbol.Id);
+                }
+            }
+            reels.Add(_random.Pick(weightedSymbols));
         }
 
         var (isWin, winText, payout) = CalculateResult(entity.Owner, entity.Comp, reels, bet);

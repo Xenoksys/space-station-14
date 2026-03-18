@@ -1,6 +1,7 @@
 using Robust.Shared.Audio;
 using Robust.Shared.GameStates;
 using Robust.Shared.Serialization;
+using Robust.Shared.Utility;
 
 namespace Content.Shared.SS220.Shitspawn.SlotMachine;
 
@@ -15,7 +16,7 @@ public sealed partial class SlotMachineComponent : Component
     public List<string> Reels = new() { "seven", "seven", "seven" };
 
     [DataField]
-    public List<List<string>> ReelPools = new();
+    public List<SlotMachineReelDef> ReelPools = new();
 
     [DataField, AutoNetworkedField]
     public List<SlotMachineRule> Rules = new();
@@ -66,4 +67,27 @@ public sealed partial class SlotMachineRule
 
     [DataField]
     public string WinText = "";
+}
+
+[DataDefinition, Serializable, NetSerializable]
+public sealed partial class SlotMachineSymbolDef
+{
+    [DataField(required: true)]
+    public string Id = string.Empty;
+
+    [DataField]
+    public string Name = "slot-machine-symbol-default";
+
+    [DataField]
+    public float Weight = 1f;
+
+    [DataField]
+    public SpriteSpecifier Icon = SpriteSpecifier.Invalid;
+}
+
+[DataDefinition, Serializable, NetSerializable]
+public sealed partial class SlotMachineReelDef
+{
+    [DataField(required: true)]
+    public List<SlotMachineSymbolDef> Symbols = new();
 }

@@ -21,6 +21,9 @@ slot-machine-symbol-cherry = вишня
 slot-machine-symbol-apple = яблоко
 slot-machine-symbol-blue-cherry = синяя вишня
 slot-machine-symbol-bell = колокол
+slot-machine-symbol-seven = семерка
+slot-machine-symbol-diamond = бриллиант
+slot-machine-symbol-default = символ
 
 slot-machine-popup-spinning = Слот-машина все еще вращается!
 slot-machine-popup-no-credits = Нужны кредиты!
