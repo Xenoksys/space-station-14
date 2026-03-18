@@ -124,10 +124,10 @@ public sealed partial class SlotMachineWindow : DefaultWindow
             {
                 Text = $"x{rule.Multiplier}",
                 VerticalAlignment = VAlignment.Center,
-                FontColorOverride = rule.Result switch
+                FontColorOverride = rule.WinText switch
                 {
-                    SlotMachineResult.Jackpot => Color.Gold,
-                    SlotMachineResult.Triple7 => Color.Red,
+                    "slot-machine-ui-win-jackpot" => Color.Gold,
+                    "slot-machine-ui-win-777" => Color.Red,
                     _ => Color.White
                 },
             };
