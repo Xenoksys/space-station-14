@@ -65,7 +65,7 @@
   - type: Anchorable
   - type: ApcPowerReceiver
     powerLoad: 500
-  - type: Physical
+  - type: Physics
     bodyType: Static
   - type: Fixtures
     fixtures:
