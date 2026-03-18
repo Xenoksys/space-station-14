@@ -58,8 +58,7 @@
     key: enum.SlotMachineUiKey.Key
   - type: UserInterface
     interfaces:
-    - key: enum.SlotMachineUiKey.Key
-      type: SlotMachineBoundUserInterface
+    - SlotMachineBoundUserInterface
   - type: Clickable
   - type: InteractionOutline
   - type: Anchorable
