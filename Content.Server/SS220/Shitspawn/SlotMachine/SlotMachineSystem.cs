@@ -28,12 +28,13 @@ public sealed class SlotMachineSystem : EntitySystem
         base.Initialize();
         SubscribeLocalEvent<SlotMachineComponent, AfterActivatableUIOpenEvent>(OnAfterUIOpen);
 
-        Subs.BuiEvents<SlotMachineComponent>(SlotMachineUiKey.Key, subs =>
-        {
-            subs.Event<SlotMachineSpinMessage>(OnSpin);
-            subs.Event<SlotMachineInsertMessage>(OnInsert);
-            subs.Event<SlotMachineCollectMessage>(OnCollect);
-        });
+        Subs.BuiEvents<SlotMachineComponent>(SlotMachineUiKey.Key,
+            subs =>
+            {
+                subs.Event<SlotMachineSpinMessage>(OnSpin);
+                subs.Event<SlotMachineInsertMessage>(OnInsert);
+                subs.Event<SlotMachineCollectMessage>(OnCollect);
+            });
     }
 
     public override void Update(float frameTime)
@@ -84,13 +85,15 @@ public sealed class SlotMachineSystem : EntitySystem
         }
 
         var amountToTake = Math.Min(args.Amount, stack.Count);
-        if (!_stack.Use(item!.Value, amountToTake, stack))
+        if (!_stack.Use(item.Value, amountToTake, stack))
             return;
 
         entity.Comp.StoredCredits += amountToTake;
         Dirty(entity.Owner, entity.Comp);
         _audio.PlayPvs(entity.Comp.InsertSound, entity.Owner);
-        _popup.PopupEntity(Loc.GetString("slot-machine-popup-inserted", ("amount", amountToTake)), args.Actor, args.Actor);
+        _popup.PopupEntity(Loc.GetString("slot-machine-popup-inserted", ("amount", amountToTake)),
+            args.Actor,
+            args.Actor);
         UpdateUI(entity.Owner, entity.Comp, spinning: false);
     }
 
@@ -122,10 +125,11 @@ public sealed class SlotMachineSystem : EntitySystem
                     weightedSymbols.Add(symbol.Id);
                 }
             }
+
             reels.Add(_random.Pick(weightedSymbols));
         }
 
-        var (isWin, winText, payout) = CalculateResult(entity.Owner, entity.Comp, reels, bet);
+        var (isWin, winText, payout) = CalculateResult(entity.Comp, reels, bet);
 
         entity.Comp.PendingReels = reels;
         entity.Comp.PendingIsWin = isWin;
@@ -153,7 +157,9 @@ public sealed class SlotMachineSystem : EntitySystem
         if (TryComp<StackComponent>(money, out var stack))
             _stack.SetCount(money, entity.Comp.StoredCredits, stack);
 
-        _popup.PopupEntity(Loc.GetString("slot-machine-popup-collected", ("amount", entity.Comp.StoredCredits)), args.Actor, args.Actor);
+        _popup.PopupEntity(Loc.GetString("slot-machine-popup-collected", ("amount", entity.Comp.StoredCredits)),
+            args.Actor,
+            args.Actor);
         entity.Comp.StoredCredits = 0;
         Dirty(entity.Owner, entity.Comp);
         UpdateUI(entity.Owner, entity.Comp, spinning: false);
@@ -161,15 +167,23 @@ public sealed class SlotMachineSystem : EntitySystem
 
     private void UpdateUI(EntityUid uid, SlotMachineComponent comp, bool spinning)
     {
-        _uiSystem.SetUiState(uid, SlotMachineUiKey.Key,
+        _uiSystem.SetUiState(uid,
+            SlotMachineUiKey.Key,
             new SlotMachineBoundUserInterfaceState(
-                comp.Reels, comp.StoredCredits,
-                comp.IsWin, comp.WinText,
-                comp.LastBet, comp.LastPayout, spinning,
-                comp.Rules, comp.ReelPools));
+                comp.Reels,
+                comp.StoredCredits,
+                comp.IsWin,
+                comp.WinText,
+                comp.LastBet,
+                comp.LastPayout,
+                spinning,
+                comp.Rules,
+                comp.ReelPools));
     }
 
-    private (bool isWin, string winText, int payout) CalculateResult(EntityUid uid, SlotMachineComponent comp, List<string> reels, int bet)
+    private (bool isWin, string winText, int payout) CalculateResult(SlotMachineComponent comp,
+        List<string> reels,
+        int bet)
     {
         foreach (var rule in comp.Rules)
         {

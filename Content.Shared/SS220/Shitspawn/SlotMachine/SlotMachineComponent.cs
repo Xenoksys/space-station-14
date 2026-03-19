@@ -67,6 +67,9 @@ public sealed partial class SlotMachineRule
 
     [DataField]
     public string WinText = "";
+
+    [DataField]
+    public Color MultiplierColor = Color.White;
 }
 
 [DataDefinition, Serializable, NetSerializable]
