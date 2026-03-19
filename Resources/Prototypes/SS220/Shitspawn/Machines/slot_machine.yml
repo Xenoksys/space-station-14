@@ -150,12 +150,12 @@
             state: diamond
   - type: Sprite
     sprite: SS220/Shitspawn/Structures/Machines/slot_machine.rsi
-    directions: 4
     noRot: false
     layers:
     - state: machine
   - type: Transform
     noRot: false
+  - type: Rotatable
   - type: ActivatableUI
     key: enum.SlotMachineUiKey.Key
   - type: UserInterface
