@@ -40,13 +40,13 @@
       - symbols:
         - id: "cherry"
           name: "slot-machine-symbol-cherry"
-          weight: 8
+          weight: 6
           icon:
             sprite: /Textures/SS220/Shitspawn/Structures/Machines/slot_machine.rsi
             state: cherry
         - id: "apple"
           name: "slot-machine-symbol-apple"
-          weight: 6
+          weight: 8
           icon:
             sprite: /Textures/SS220/Shitspawn/Structures/Machines/slot_machine.rsi
             state: apple
@@ -77,13 +77,13 @@
       - symbols:
         - id: "cherry"
           name: "slot-machine-symbol-cherry"
-          weight: 8
+          weight: 6
           icon:
             sprite: /Textures/SS220/Shitspawn/Structures/Machines/slot_machine.rsi
             state: cherry
         - id: "apple"
           name: "slot-machine-symbol-apple"
-          weight: 6
+          weight: 8
           icon:
             sprite: /Textures/SS220/Shitspawn/Structures/Machines/slot_machine.rsi
             state: apple
@@ -114,13 +114,13 @@
       - symbols:
         - id: "cherry"
           name: "slot-machine-symbol-cherry"
-          weight: 8
+          weight: 6
           icon:
             sprite: /Textures/SS220/Shitspawn/Structures/Machines/slot_machine.rsi
             state: cherry
         - id: "apple"
           name: "slot-machine-symbol-apple"
-          weight: 6
+          weight: 8
           icon:
             sprite: /Textures/SS220/Shitspawn/Structures/Machines/slot_machine.rsi
             state: apple
