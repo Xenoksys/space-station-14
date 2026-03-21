@@ -10,7 +10,7 @@ namespace Content.Shared.SS220.Shitspawn.AshDrake;
 [RegisterComponent, NetworkedComponent, AutoGenerateComponentState]
 public sealed partial class AshDrakeMeteorComponent : Component
 {
-    [DataField] public EntProtoId ProjectileProto = "ProjectileAshDrakeFireMeteor";
+    [DataField] public EntProtoId ProjectileProto = "AshDrakeFireMeteorFalling";
     [DataField] public int Count = 20;
     [DataField] public float Speed = 8f;
     [DataField] public float Radius = 8f;

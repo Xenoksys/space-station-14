@@ -97,7 +97,7 @@
     damageCoefficient: 0.0
   - type: Butcherable
     spawned:
-    - id: FoodMeatDragon
+    - id: FoodMeat
       amount: 30
     - id: AshDrakeCloak
       amount: 1
@@ -134,8 +134,8 @@
     action: ActionAshDrakeFireCone
     gunProto: AshDrakeFireConeGun
   - type: AshDrakeMeteor
-    count: 45
-    radius: 10
+    count: 20
+    radius: 8
     spawnHeight: 10
     speed: 8
     spawnInterval: 0.15
@@ -174,7 +174,7 @@
   components:
   - type: ProjectileSpread
     proto: ProjectileAshDrakeFireCone
-    count: 5
+    count: 3
     spread: 75
 
 - type: entity
@@ -225,7 +225,6 @@
     checkCanAccess: false
     range: 0
   - type: WorldTargetAction
-    cursorTexture: { sprite: SS220/Shitspawn/AshDrake/icons/fire_cone.rsi, state: icon }
     event: !type:ActionGunShootEvent
 
 - type: entity
@@ -317,7 +316,6 @@
     checkCanAccess: false
     range: 20
   - type: WorldTargetAction
-    cursorTexture: { sprite: SS220/Shitspawn/AshDrake/icons/wing_dive.rsi, state: icon }
     event: !type:AshDrakeFlyActionEvent
 
 - type: entity
@@ -389,7 +387,6 @@
     checkCanAccess: false
     range: 30
   - type: WorldTargetAction
-    cursorTexture: { sprite: SS220/Shitspawn/AshDrake/icons/great_fireball.rsi, state: icon }
     event: !type:AshDrakeGreatFireballActionEvent
 
 - type: entity
@@ -409,8 +406,6 @@
   - type: HideLayerClothing
     slots:
     - Hair
-  - type: TemperatureProtection
-    coefficient: 0.1
   - type: FireProtection
     reduction: 1.0
   - type: Armor
@@ -432,12 +427,9 @@
     requiredSlot:
     - neck
     slot: head
-    actionId: ActionToggleAshDrakeHood
   - type: ContainerContainer
     containers:
       toggleable-clothing: !type:ContainerSlot {}
-  - type: TemperatureProtection
-    coefficient: 0.1
   - type: FireProtection
     reduction: 1.0
   - type: Armor
@@ -447,13 +439,13 @@
 
 - type: entity
   id: ActionToggleAshDrakeHood
+  parent: BaseAction
   name: Переключить капюшон
   categories: [ HideSpawnMenu ]
   components:
+  - type: Action
+    icon: { sprite: SS220/Shitspawn/AshDrake/ash_drake_hood.rsi, state: icon }
   - type: InstantAction
-    icon:
-      sprite: SS220/Shitspawn/AshDrake/ash_drake_hood.rsi
-      state: icon
     event: !type:ToggleClothingEvent {}
 
 - type: emote
@@ -470,5 +462,3 @@
   - roars
   - рёв
   - ревёт
-  sound:
-    path: /Audio/SS220/Shitspawn/AshDrake/roar.ogg
