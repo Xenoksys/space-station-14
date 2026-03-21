@@ -4,8 +4,8 @@ using Content.Shared.SS220.Shitspawn.AshDrake;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Map;
-using Robust.Shared.Timing;
 using Robust.Shared.Random;
+using Robust.Shared.Timing;
 using System;
 using System.Numerics;
 
@@ -18,41 +18,12 @@ public sealed class AshDrakeMeteorSystem : EntitySystem
     [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly SharedAudioSystem _audio = default!;
 
-    private readonly List<(EntityUid Uid, Vector2 Target, float Speed)> _falling = new();
-
     public override void Initialize()
     {
         base.Initialize();
         SubscribeLocalEvent<AshDrakeMeteorComponent, MapInitEvent>(OnMapInit);
         SubscribeLocalEvent<AshDrakeMeteorComponent, ComponentShutdown>(OnShutdown);
         SubscribeLocalEvent<AshDrakeMeteorComponent, AshDrakeMeteorActionEvent>(OnMeteorAction);
-    }
-
-    public override void Update(float frameTime)
-    {
-        base.Update(frameTime);
-
-        if (_falling.Count == 0)
-            return;
-
-        for (var i = _falling.Count - 1; i >= 0; i--)
-        {
-            var (uid, target, speed) = _falling[i];
-            if (!Exists(uid)) { _falling.RemoveAt(i); continue; }
-
-            var xform = Transform(uid);
-            var cur = _transform.GetWorldPosition(xform);
-            var dir = target - cur;
-
-            if (dir.Length() <= speed * frameTime)
-            {
-                _transform.SetWorldPosition(xform, target);
-                _falling.RemoveAt(i);
-                continue;
-            }
-
-            _transform.SetWorldPosition(xform, cur + Vector2.Normalize(dir) * speed * frameTime);
-        }
     }
 
     private void OnMapInit(EntityUid uid, AshDrakeMeteorComponent comp, MapInitEvent args)
@@ -89,7 +60,12 @@ public sealed class AshDrakeMeteorSystem : EntitySystem
     {
         var startPos = new MapCoordinates(target.X, target.Y + spawnHeight, target.MapId);
         var visual = Spawn("AshDrakeFireMeteorFalling", startPos);
-        _falling.Add((visual, new Vector2(target.X, target.Y), speed));
+
+        var falling = AddComp<AshDrakeMeteorFallingComponent>(visual);
+        falling.Target = new Vector2(target.X, target.Y);
+        falling.Speed = speed;
+        Dirty(visual, falling);
+
         Spawn("AshDrakeFireMeteorMarker", target);
     }
 }
