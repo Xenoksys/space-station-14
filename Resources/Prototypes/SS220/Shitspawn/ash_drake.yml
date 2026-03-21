@@ -382,6 +382,8 @@
   - type: IgnitionSource
     temperature: 1200
     ignited: true
+  - type: TimedDespawn
+    lifetime: 0.1
   - type: Tag
     tags:
     - HideContextMenu
