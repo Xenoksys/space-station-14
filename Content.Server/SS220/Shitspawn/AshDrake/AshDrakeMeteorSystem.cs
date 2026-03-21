@@ -5,7 +5,6 @@ using Robust.Shared.Audio.Systems;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Map;
 using Robust.Shared.Random;
-using Robust.Shared.Timing;
 using System;
 using System.Numerics;
 
@@ -16,10 +15,9 @@ public sealed class AshDrakeMeteorSystem : EntitySystem
     [Dependency] private readonly SharedActionsSystem _actions = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
     [Dependency] private readonly IRobustRandom _random = default!;
-    [Dependency] private readonly IGameTiming _timing = default!;
     [Dependency] private readonly SharedAudioSystem _audio = default!;
+    [Dependency] private readonly SharedTimerSystem _timer = default!;
 
-    private readonly List<(TimeSpan SpawnAt, MapCoordinates Target, float SpawnHeight, float Speed)> _pending = new();
     private readonly List<(EntityUid Uid, Vector2 Target, float Speed)> _falling = new();
 
     public override void Initialize()
@@ -34,22 +32,8 @@ public sealed class AshDrakeMeteorSystem : EntitySystem
     {
         base.Update(frameTime);
 
-        if (_pending.Count == 0 && _falling.Count == 0)
+        if (_falling.Count == 0)
             return;
-
-        var now = _timing.CurTime;
-
-        for (var i = _pending.Count - 1; i >= 0; i--)
-        {
-            var (spawnAt, target, spawnHeight, speed) = _pending[i];
-            if (now < spawnAt) continue;
-            _pending.RemoveAt(i);
-
-            var startPos = new MapCoordinates(target.X, target.Y + spawnHeight, target.MapId);
-            var visual = Spawn("AshDrakeFireMeteorFalling", startPos);
-            _falling.Add((visual, new Vector2(target.X, target.Y), speed));
-            Spawn("AshDrakeFireMeteorMarker", target);
-        }
 
         for (var i = _falling.Count - 1; i >= 0; i--)
         {
@@ -85,7 +69,6 @@ public sealed class AshDrakeMeteorSystem : EntitySystem
         _audio.PlayPvs(comp.Sound, uid);
 
         var mapCoords = _transform.GetMapCoordinates(uid);
-        var now = _timing.CurTime;
 
         for (var i = 0; i < comp.Count; i++)
         {
@@ -93,7 +76,20 @@ public sealed class AshDrakeMeteorSystem : EntitySystem
                 mapCoords.X + _random.NextFloat(-comp.Radius, comp.Radius),
                 mapCoords.Y + _random.NextFloat(-comp.Radius, comp.Radius),
                 mapCoords.MapId);
-            _pending.Add((now + TimeSpan.FromSeconds(i * comp.SpawnInterval), pos, comp.SpawnHeight, comp.Speed));
+
+            var delay = TimeSpan.FromSeconds(i * comp.SpawnInterval);
+            var height = comp.SpawnHeight;
+            var speed = comp.Speed;
+
+            _timer.Spawn(delay, () => SpawnMeteor(pos, height, speed));
         }
+    }
+
+    private void SpawnMeteor(MapCoordinates target, float spawnHeight, float speed)
+    {
+        var startPos = new MapCoordinates(target.X, target.Y + spawnHeight, target.MapId);
+        var visual = Spawn("AshDrakeFireMeteorFalling", startPos);
+        _falling.Add((visual, new Vector2(target.X, target.Y), speed));
+        Spawn("AshDrakeFireMeteorMarker", target);
     }
 }
