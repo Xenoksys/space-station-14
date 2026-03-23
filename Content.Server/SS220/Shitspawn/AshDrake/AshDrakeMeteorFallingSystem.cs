@@ -1,14 +1,12 @@
 // © SS220, An EULA/CLA with a hosting restriction, full text: https://raw.githubusercontent.com/SerbiaStrong-220/space-station-14/master/CLA.txt
-using Robust.Shared.GameObjects;
-using Robust.Shared.Network;
+using Content.Shared.SS220.Shitspawn.AshDrake;
 using System.Numerics;
 
-namespace Content.Shared.SS220.Shitspawn.AshDrake;
+namespace Content.Server.SS220.Shitspawn.AshDrake;
 
 public sealed class AshDrakeMeteorFallingSystem : EntitySystem
 {
     [Dependency] private readonly SharedTransformSystem _transform = default!;
-    [Dependency] private readonly INetManager _net = default!;
 
     public override void Update(float frameTime)
     {
@@ -24,8 +22,7 @@ public sealed class AshDrakeMeteorFallingSystem : EntitySystem
             if (dir.Length() <= comp.Speed * frameTime)
             {
                 _transform.SetWorldPosition(xform, comp.Target);
-                if (_net.IsServer)
-                    RemComp<AshDrakeMeteorFallingComponent>(uid);
+                RemComp<AshDrakeMeteorFallingComponent>(uid);
                 continue;
             }
 

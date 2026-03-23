@@ -2,11 +2,7 @@
 using Content.Shared.Actions;
 using Content.Shared.SS220.Shitspawn.AshDrake;
 using Robust.Shared.Audio.Systems;
-using Robust.Shared.GameObjects;
 using Robust.Shared.Map;
-using Robust.Shared.Physics;
-using Robust.Shared.Physics.Components;
-using Robust.Shared.Physics.Systems;
 using System.Numerics;
 
 namespace Content.Server.SS220.Shitspawn.AshDrake;
@@ -15,7 +11,6 @@ public sealed class AshDrakeGreatFireballSystem : EntitySystem
 {
     [Dependency] private readonly SharedActionsSystem _actions = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
-    [Dependency] private readonly SharedPhysicsSystem _physics = default!;
     [Dependency] private readonly SharedAudioSystem _audio = default!;
 
     public override void Initialize()
@@ -56,8 +51,7 @@ public sealed class AshDrakeGreatFireballSystem : EntitySystem
 
         _transform.SetWorldRotation(fireball, new Angle(velocity));
 
-        var body = EnsureComp<PhysicsComponent>(fireball);
-        _physics.SetBodyStatus(fireball, body, BodyStatus.InAir);
-        _physics.SetLinearVelocity(fireball, velocity, body: body);
+        var trail = EnsureComp<AshDrakeGreatFireballLavaTrailComponent>(fireball);
+        trail.Velocity = velocity;
     }
 }
