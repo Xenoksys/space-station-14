@@ -1,8 +1,8 @@
 // © SS220, An EULA/CLA with a hosting restriction, full text: https://raw.githubusercontent.com/SerbiaStrong-220/space-station-14/master/CLA.txt
-using Robust.Shared.GameObjects;
+using Content.Shared.Maps;
+using Content.Shared.Physics;
 using Robust.Shared.Map;
 using Robust.Shared.Map.Components;
-using Robust.Shared.Physics.Events;
 using System.Numerics;
 
 namespace Content.Server.SS220.Shitspawn.AshDrake;
@@ -10,12 +10,7 @@ namespace Content.Server.SS220.Shitspawn.AshDrake;
 public sealed class AshDrakeGreatFireballLavaTrailSystem : EntitySystem
 {
     [Dependency] private readonly SharedTransformSystem _transform = default!;
-
-    public override void Initialize()
-    {
-        base.Initialize();
-        SubscribeLocalEvent<AshDrakeGreatFireballLavaTrailComponent, StartCollideEvent>(OnCollide);
-    }
+    [Dependency] private readonly TurfSystem _turf = default!;
 
     public override void Update(float frameTime)
     {
@@ -24,28 +19,52 @@ public sealed class AshDrakeGreatFireballLavaTrailSystem : EntitySystem
         var query = EntityQueryEnumerator<AshDrakeGreatFireballLavaTrailComponent>();
         while (query.MoveNext(out var uid, out var comp))
         {
-            comp.TimeSinceLastLava += frameTime;
-            if (comp.TimeSinceLastLava < AshDrakeGreatFireballLavaTrailComponent.LavaTrailInterval)
+            if (comp.Velocity == Vector2.Zero)
                 continue;
 
-            comp.TimeSinceLastLava = 0f;
-            SpawnLavaAt(uid);
+            var xform = Transform(uid);
+            var curPos = _transform.GetWorldPosition(xform);
+            var newPos = curPos + comp.Velocity * frameTime;
+
+            if (HitsWall(xform, newPos))
+            {
+                ExplodeAt(uid, xform);
+                continue;
+            }
+
+            _transform.SetWorldPosition(xform, newPos);
+
+            comp.TimeSinceLastLava += frameTime;
+            if (comp.TimeSinceLastLava >= AshDrakeGreatFireballLavaTrailComponent.LavaTrailInterval)
+            {
+                comp.TimeSinceLastLava = 0f;
+                SpawnLavaAt(uid, xform);
+            }
         }
     }
 
-    private void OnCollide(EntityUid uid, AshDrakeGreatFireballLavaTrailComponent comp, ref StartCollideEvent args)
+    private bool HitsWall(TransformComponent xform, Vector2 newPos)
     {
-        if (!args.OtherFixture.Hard || Deleted(uid))
+        if (xform.GridUid == null || !TryComp<MapGridComponent>(xform.GridUid, out var grid))
+            return false;
+
+        var tileIndices = grid.TileIndicesFor(new MapCoordinates(newPos, xform.MapID));
+        var tileRef = grid.GetTileRef(tileIndices);
+
+        return tileRef.Tile.IsEmpty || _turf.IsTileBlocked(tileRef, CollisionGroup.Impassable);
+    }
+
+    private void ExplodeAt(EntityUid uid, TransformComponent xform)
+    {
+        if (Deleted(uid))
             return;
 
-        var coords = Transform(uid).Coordinates;
-        Spawn("AshDrakeGreatFireballExplosion", coords);
+        Spawn("AshDrakeGreatFireballExplosion", xform.Coordinates);
         Del(uid);
     }
 
-    private void SpawnLavaAt(EntityUid uid)
+    private void SpawnLavaAt(EntityUid uid, TransformComponent xform)
     {
-        var xform = Transform(uid);
         if (xform.GridUid == null || !TryComp<MapGridComponent>(xform.GridUid, out var grid))
             return;
 
