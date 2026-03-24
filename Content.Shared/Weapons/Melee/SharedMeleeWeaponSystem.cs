@@ -755,7 +755,7 @@ public abstract class SharedMeleeWeaponSystem : EntitySystem
             _meleeSound.PlayHitSound(target, user, GetHighestDamageSound(appliedDamage, _protoManager), hitEvent.HitSoundOverride, component);
         }
 
-        if (appliedDamage.GetTotal() > FixedPoint2.Zero && !TerminatingOrDeleted(targets[0]))
+        if (appliedDamage.GetTotal() > FixedPoint2.Zero && !TerminatingOrDeleted(targets[0])) // SS220-fix-heavy-attack-deleted-target
         {
             DoDamageEffect(targets, user, Transform(targets[0]));
         }

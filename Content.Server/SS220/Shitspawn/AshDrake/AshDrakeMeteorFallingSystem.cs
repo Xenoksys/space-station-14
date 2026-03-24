@@ -15,7 +15,8 @@ public sealed class AshDrakeMeteorFallingSystem : EntitySystem
         var query = EntityQueryEnumerator<AshDrakeMeteorFallingComponent>();
         while (query.MoveNext(out var uid, out var comp))
         {
-            var xform = Transform(uid);
+            if (!TryComp<TransformComponent>(uid, out var xform))
+                continue;
             var cur = _transform.GetWorldPosition(xform);
             var dir = comp.Target - cur;
 
