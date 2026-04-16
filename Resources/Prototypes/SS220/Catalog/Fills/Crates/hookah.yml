@@ -1,0 +1,27 @@
+
+- type: entity
+  id: CrateServiceHookah
+  parent: CrateGenericSteel
+  name: Ящик с кальяном
+  description: "Полный комплект для сборки кальяна: колба, шахта, блюдце, трубка и коробка углей. Культурный отдых на смене."
+  components:
+  - type: StorageFill
+    contents:
+    - id: HookahFlask
+    - id: HookahShaft
+    - id: HookahSaucer
+    - id: HookahTubePart
+    - id: HookahCoalBox
+    - id: LeavesTobaccoDried
+      amount: 10
+
+- type: entity
+  id: CrateServiceHookahCoalBox
+  parent: CrateGenericSteel
+  name: Ящик с углём для кальяна
+  description: Содержит коробку жарового угля для кальяна.
+  components:
+  - type: StorageFill
+    contents:
+    - id: HookahCoalBox
+
