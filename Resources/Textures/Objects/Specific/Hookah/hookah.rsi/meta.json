@@ -7,19 +7,23 @@
     "y": 32
   },
   "states": [
-    { "name": "icon" },
-    { "name": "icon-no-hose" },
-    { "name": "icon-coal" },
-    { "name": "icon-coal-no-hose" },
-    { "name": "icon-lit" },
-    { "name": "icon-lit-no-hose" },
     {
-      "name": "inhand-left",
-      "directions": 4
+      "name": "icon"
     },
     {
-      "name": "inhand-right",
-      "directions": 4
+      "name": "icon-no-hose"
+    },
+    {
+      "name": "icon-coal"
+    },
+    {
+      "name": "icon-coal-no-hose"
+    },
+    {
+      "name": "icon-lit"
+    },
+    {
+      "name": "icon-lit-no-hose"
     }
   ]
 }

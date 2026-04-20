@@ -1,3 +1,4 @@
+using System;
 using Robust.Shared.GameStates;
 
 namespace Content.Shared.SS220.Hookah.Components;
@@ -11,5 +12,5 @@ public sealed partial class HookahHoseComponent : Component
     public float MaxDistance = 3f;
 
     [DataField]
-    public float CheckInterval = 0.25f;
+    public TimeSpan CheckInterval = TimeSpan.FromSeconds(0.25);
 }

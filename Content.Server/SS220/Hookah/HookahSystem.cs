@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using Content.Server.Atmos.EntitySystems;
 using Content.Server.Body.Systems;
@@ -21,13 +22,11 @@ using Content.Shared.SS220.Hookah.Components;
 using Content.Shared.Stacks;
 using Content.Shared.Temperature;
 using Content.Shared.Timing;
-using Content.Shared.Verbs;
 using Robust.Server.GameObjects;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
 using Robust.Shared.Map;
 using Robust.Shared.Map.Components;
-using Robust.Shared.Utility;
 
 namespace Content.Server.SS220.Hookah;
 
@@ -57,9 +56,6 @@ public sealed class HookahSystem : EntitySystem
         SubscribeLocalEvent<HookahComponent, InteractHandEvent>(OnInteractHand);
         SubscribeLocalEvent<HookahComponent, InteractUsingEvent>(OnInteractUsing);
         SubscribeLocalEvent<HookahComponent, ExaminedEvent>(OnExamined);
-
-        SubscribeLocalEvent<HookahPickupComponent, GetVerbsEvent<AlternativeVerb>>(OnPickupVerbs);
-        SubscribeLocalEvent<HookahPickupComponent, HookahPickupDoAfterEvent>(OnPickupDoAfter);
 
         SubscribeLocalEvent<HookahHoseComponent, UseInHandEvent>(OnUseHose);
         SubscribeLocalEvent<HookahHoseComponent, HookahSmokeDoAfterEvent>(OnSmokeDoAfter);
@@ -144,20 +140,20 @@ public sealed class HookahSystem : EntitySystem
 
         if (HasComp<HookahCoalComponent>(args.Used))
         {
-            InsertCoal(ent, args);
+            InsertCoal(ent, ref args);
             return;
         }
 
         if (TryComp<SmokingFuelComponent>(ent, out var fuel) && IsTobacco(args.Used, fuel))
         {
-            InsertTobacco(ent, args, fuel);
+            InsertTobacco(ent, ref args, fuel);
             return;
         }
 
-        var isHot = new IsHotEvent();
-        RaiseLocalEvent(args.Used, isHot);
+        var hot = new IsHotEvent();
+        RaiseLocalEvent(args.Used, hot);
 
-        if (!isHot.IsHot)
+        if (!hot.IsHot)
             return;
 
         if (ent.Comp.IsLit)
@@ -179,7 +175,7 @@ public sealed class HookahSystem : EntitySystem
         args.Handled = true;
     }
 
-    private void InsertCoal(Entity<HookahComponent> ent, InteractUsingEvent args)
+    private void InsertCoal(Entity<HookahComponent> ent, ref InteractUsingEvent args)
     {
         if (ent.Comp.CoalSlot.Item != null)
         {
@@ -197,7 +193,7 @@ public sealed class HookahSystem : EntitySystem
         args.Handled = true;
     }
 
-    private void InsertTobacco(Entity<HookahComponent> ent, InteractUsingEvent args, SmokingFuelComponent fuel)
+    private void InsertTobacco(Entity<HookahComponent> ent, ref InteractUsingEvent args, SmokingFuelComponent fuel)
     {
         if (fuel.TobaccoSlot.Item != null)
         {
@@ -423,11 +419,11 @@ public sealed class HookahSystem : EntitySystem
         var query = EntityQueryEnumerator<HookahHoseComponent, ActiveHookahHoseComponent>();
         while (query.MoveNext(out var uid, out var hose, out var active))
         {
-            active.Accum += frameTime;
+            active.Accum += TimeSpan.FromSeconds(frameTime);
             if (active.Accum < hose.CheckInterval)
                 continue;
 
-            active.Accum = 0f;
+            active.Accum = TimeSpan.Zero;
 
             if (!_container.TryGetContainingContainer(uid, out var container) ||
                 !TryComp<HandsComponent>(container.Owner, out var hands))
@@ -445,7 +441,7 @@ public sealed class HookahSystem : EntitySystem
             var hosePos = _transform.GetWorldPosition(uid);
             var hookahPos = _transform.GetWorldPosition(hose.HookahUid);
 
-            if ((hosePos - hookahPos).Length() <= hose.MaxDistance)
+            if ((hosePos - hookahPos).LengthSquared() <= hose.MaxDistance * hose.MaxDistance)
                 continue;
 
             RemComp<JointVisualsComponent>(uid);
@@ -466,7 +462,11 @@ public sealed class HookahSystem : EntitySystem
             }
 
             if (!TryComp<HookahCoalComponent>(coalUid, out var coal))
+            {
+                Log.Warning($"{ToPrettyString(uid)} has non-coal entity {ToPrettyString(coalUid)} in its coal slot.");
+                SetLit((uid, hookah), false);
                 continue;
+            }
 
             coal.FuelLeft -= coal.FuelDrainIdle * frameTime;
 
@@ -528,70 +528,6 @@ public sealed class HookahSystem : EntitySystem
                 : hoseOut ? HookahVisualState.UnlitNoHose : HookahVisualState.Unlit;
 
         _appearance.SetData(ent, HookahVisuals.State, state);
-    }
-
-    private void OnPickupVerbs(Entity<HookahPickupComponent> ent, ref GetVerbsEvent<AlternativeVerb> args)
-    {
-        if (!args.CanAccess ||
-            !args.CanInteract ||
-            args.Hands == null ||
-            _hands.CountFreeHands((args.User, args.Hands)) < 2)
-            return;
-
-        var user = args.User;
-        args.Verbs.Add(new AlternativeVerb
-        {
-            Text = Loc.GetString("hookah-verb-pickup"),
-            Icon = new SpriteSpecifier.Texture(new ResPath("/Textures/Interface/VerbIcons/pickup.svg.192dpi.png")),
-            Act = () => StartPickup(ent, user),
-            Priority = 2,
-        });
-    }
-
-    private void StartPickup(Entity<HookahPickupComponent> ent, EntityUid user)
-    {
-        if (_hands.CountFreeHands(user) < 2)
-        {
-            _popup.PopupEntity(Loc.GetString("hookah-pickup-need-two-hands"), ent, user);
-            return;
-        }
-
-        _popup.PopupEntity(Loc.GetString("hookah-pickup-start"), ent, user);
-
-        _doAfter.TryStartDoAfter(new DoAfterArgs(
-            EntityManager,
-            user,
-            ent.Comp.PickupDelay,
-            new HookahPickupDoAfterEvent(),
-            ent,
-            target: ent)
-        {
-            BreakOnMove = true,
-            BreakOnDamage = true,
-            BreakOnHandChange = false,
-            NeedHand = true,
-            BlockDuplicate = true,
-        });
-    }
-
-    private void OnPickupDoAfter(Entity<HookahPickupComponent> ent, ref HookahPickupDoAfterEvent args)
-    {
-        if (args.Cancelled || args.Handled)
-            return;
-
-        if (_hands.CountFreeHands(args.User) < 2)
-        {
-            _popup.PopupEntity(Loc.GetString("hookah-pickup-need-two-hands"), ent, args.User);
-            args.Handled = true;
-            return;
-        }
-
-        ent.Comp.PickupAuthorized = true;
-        var success = _hands.TryPickupAnyHand(args.User, ent, checkActionBlocker: true);
-        ent.Comp.PickupAuthorized = false;
-
-        _popup.PopupEntity(Loc.GetString(success ? "hookah-pickup-success" : "hookah-pickup-fail"), ent, args.User);
-        args.Handled = true;
     }
 
     private void OnExamined(Entity<HookahComponent> ent, ref ExaminedEvent args)

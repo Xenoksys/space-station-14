@@ -4,11 +4,16 @@ using Content.Shared.SS220.Hookah.Components;
 using Robust.Shared.Audio;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Localization;
+using Robust.Shared.Prototypes;
 
 namespace Content.Server.SS220.Hookah;
 
 public sealed class HookahAssemblySystem : EntitySystem
 {
+    private static readonly EntProtoId HookahPartialId = "HookahPartial";
+    private static readonly EntProtoId HookahPartialFullId = "HookahPartialFull";
+    private static readonly EntProtoId HookahBaseId = "HookahBase";
+
     [Dependency] private readonly SharedAudioSystem _audio = default!;
     [Dependency] private readonly SharedPopupSystem _popup = default!;
 
@@ -26,7 +31,7 @@ public sealed class HookahAssemblySystem : EntitySystem
         if (args.Handled || !HasComp<HookahShaftComponent>(args.Used))
             return;
 
-        Assemble(ent, args.Used, "HookahPartial", ent.Comp.AssemblySound);
+        Assemble(ent, args.Used, HookahPartialId, ent.Comp.AssemblySound);
         _popup.PopupEntity(Loc.GetString("hookah-assembly-stage1"), args.User, args.User);
         args.Handled = true;
     }
@@ -36,7 +41,7 @@ public sealed class HookahAssemblySystem : EntitySystem
         if (args.Handled || !HasComp<HookahSaucerComponent>(args.Used))
             return;
 
-        Assemble(ent, args.Used, "HookahPartialFull", ent.Comp.AssemblySound);
+        Assemble(ent, args.Used, HookahPartialFullId, ent.Comp.AssemblySound);
         _popup.PopupEntity(Loc.GetString("hookah-assembly-stage2"), args.User, args.User);
         args.Handled = true;
     }
@@ -46,12 +51,12 @@ public sealed class HookahAssemblySystem : EntitySystem
         if (args.Handled || !HasComp<HookahTubePartComponent>(args.Used))
             return;
 
-        Assemble(ent, args.Used, "HookahBase", ent.Comp.AssemblySound);
+        Assemble(ent, args.Used, HookahBaseId, ent.Comp.AssemblySound);
         _popup.PopupEntity(Loc.GetString("hookah-assembly-complete"), args.User, args.User);
         args.Handled = true;
     }
 
-    private void Assemble(EntityUid target, EntityUid used, string resultProto, SoundSpecifier sound)
+    private void Assemble(EntityUid target, EntityUid used, EntProtoId resultProto, SoundSpecifier sound)
     {
         var coords = Transform(target).Coordinates;
         var result = Spawn(resultProto, coords);

@@ -23,13 +23,7 @@ hookah-tobacco-empty = Табак закончился.
 hookah-examine-tobacco = Табака осталось на { $puffs } затяжек.
 hookah-examine-coal = Углей хватит примерно на { $seconds } секунд.
 
-hookah-verb-pickup = Поднять кальян
-hookah-pickup-start = Вы аккуратно берётесь за кальян...
-hookah-pickup-success = Вы поднимаете кальян.
-hookah-pickup-fail = Не удалось поднять кальян.
-hookah-pickup-need-two-hands = Нужны две свободные руки.
-
-crate-service-hookah-name = Ящик для кальяна
-crate-service-hookah-desc = Ящик для кальяна, содержащий уголь, табак, жидкость, трубку и другие принадлежности. Откройте, чтобы получить доступ к содержимому.
-crate-service-hookah-coal-name = Ящик кальянных углей
-crate-service-hookah-coal-desc = Ящик содержащий уголь для кальяна.
+ent-CrateServiceHookah = Ящик для кальяна
+    .desc = Ящик для кальяна, содержащий уголь, табак, жидкость, трубку и другие принадлежности. Откройте, чтобы получить доступ к содержимому.
+ent-CrateServiceHookahCoalBox = Ящик кальянных углей
+    .desc = Ящик, содержащий уголь для кальяна.

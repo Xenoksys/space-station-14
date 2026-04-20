@@ -1,8 +1,4 @@
 
-- type: Tag
-  id: HookahCoal
-
-
 - type: entity
   id: HookahFlask
   name: колба кальяна
@@ -109,16 +105,7 @@
     coalUnlitNoHoseState: icon-coal-no-hose
     coalLitState: icon-lit
     coalLitNoHoseState: icon-lit-no-hose
-  - type: Item
-    size: Ginormous
-    sprite: Objects/Specific/Hookah/hookah.rsi
-  - type: MultiHandedItem
-  - type: HookahPickup
-    pickupDelay: 3
-  - type: ClothingSpeedModifier
-    walkModifier: 0.8
-    sprintModifier: 0.8
-  - type: HeldSpeedModifier
+  - type: Pullable
   - type: Damageable
     damageContainer: StructuralInorganic
   - type: Destructible
@@ -284,4 +271,3 @@
     contents:
     - id: HookahCoal
       amount: 9
-

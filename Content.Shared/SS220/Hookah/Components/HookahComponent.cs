@@ -2,6 +2,7 @@ using Content.Shared.Atmos;
 using Content.Shared.Containers.ItemSlots;
 using Robust.Shared.Audio;
 using Robust.Shared.GameStates;
+using Robust.Shared.Prototypes;
 using Robust.Shared.Utility;
 
 namespace Content.Shared.SS220.Hookah.Components;
@@ -24,7 +25,7 @@ public sealed partial class HookahComponent : Component
     public bool IsLit;
 
     [DataField]
-    public string HosePrototype = "HookahHose";
+    public EntProtoId HosePrototype = "HookahHose";
 
     [DataField]
     public float InhaleAmount = 2f;
