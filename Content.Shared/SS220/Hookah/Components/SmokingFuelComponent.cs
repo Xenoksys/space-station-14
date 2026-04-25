@@ -1,4 +1,5 @@
 using Content.Shared.Containers.ItemSlots;
+using Robust.Shared.Prototypes;
 
 namespace Content.Shared.SS220.Hookah.Components;
 
@@ -14,7 +15,7 @@ public sealed partial class SmokingFuelComponent : Component
     public int TobaccoPuffs;
 
     [DataField]
-    public string TobaccoId = "LeavesTobaccoDried";
+    public EntProtoId TobaccoId = "LeavesTobaccoDried";
 
     [DataField]
     public int PuffsPerPack = 20;

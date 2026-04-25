@@ -32,6 +32,24 @@ namespace Content.Server.SS220.Hookah;
 
 public sealed class HookahSystem : EntitySystem
 {
+    private static readonly LocId HookahHoseAlreadyConnected = "hookah-hose-already-connected";
+    private static readonly LocId HookahAlreadyLit = "hookah-already-lit";
+    private static readonly LocId HookahNoCoal = "hookah-no-coal";
+    private static readonly LocId HookahLit = "hookah-lit";
+    private static readonly LocId HookahCoalSlotFull = "hookah-coal-slot-full";
+    private static readonly LocId HookahCoalInserted = "hookah-coal-inserted";
+    private static readonly LocId HookahTobaccoSlotFull = "hookah-tobacco-slot-full";
+    private static readonly LocId HookahTobaccoInserted = "hookah-tobacco-inserted";
+    private static readonly LocId HookahDragStart = "hookah-drag-start";
+    private static readonly LocId HookahSmoke = "hookah-smoke";
+    private static readonly LocId HookahNotLit = "hookah-not-lit";
+    private static readonly LocId HookahSolutionEmpty = "hookah-solution-empty";
+    private static readonly LocId HookahTobaccoEmpty = "hookah-tobacco-empty";
+    private static readonly LocId HookahHoseTooFar = "hookah-hose-too-far";
+    private static readonly LocId HookahCoalOut = "hookah-coal-out";
+    private static readonly LocId HookahExamineTobacco = "hookah-examine-tobacco";
+    private static readonly LocId HookahExamineCoal = "hookah-examine-coal";
+
     [Dependency] private readonly AtmosphereSystem _atmos = default!;
     [Dependency] private readonly BloodstreamSystem _bloodstream = default!;
     [Dependency] private readonly ItemSlotsSystem _itemSlots = default!;
@@ -108,7 +126,7 @@ public sealed class HookahSystem : EntitySystem
 
         if (ent.Comp.ConnectedHose is { } existing && !TerminatingOrDeleted(existing))
         {
-            _popup.PopupEntity(Loc.GetString("hookah-hose-already-connected"), ent, args.User);
+            _popup.PopupEntity(Loc.GetString(HookahHoseAlreadyConnected), ent, args.User);
             args.Handled = true;
             return;
         }
@@ -158,20 +176,20 @@ public sealed class HookahSystem : EntitySystem
 
         if (ent.Comp.IsLit)
         {
-            _popup.PopupEntity(Loc.GetString("hookah-already-lit"), ent, args.User);
+            _popup.PopupEntity(Loc.GetString(HookahAlreadyLit), ent, args.User);
             args.Handled = true;
             return;
         }
 
         if (ent.Comp.CoalSlot.Item == null)
         {
-            _popup.PopupEntity(Loc.GetString("hookah-no-coal"), ent, args.User);
+            _popup.PopupEntity(Loc.GetString(HookahNoCoal), ent, args.User);
             args.Handled = true;
             return;
         }
 
         SetLit(ent, true);
-        _popup.PopupEntity(Loc.GetString("hookah-lit"), ent, args.User);
+        _popup.PopupEntity(Loc.GetString(HookahLit), ent, args.User);
         args.Handled = true;
     }
 
@@ -179,7 +197,7 @@ public sealed class HookahSystem : EntitySystem
     {
         if (ent.Comp.CoalSlot.Item != null)
         {
-            _popup.PopupEntity(Loc.GetString("hookah-coal-slot-full"), ent, args.User);
+            _popup.PopupEntity(Loc.GetString(HookahCoalSlotFull), ent, args.User);
             args.Handled = true;
             return;
         }
@@ -188,7 +206,7 @@ public sealed class HookahSystem : EntitySystem
             return;
 
         _itemSlots.SetLock(ent, ent.Comp.CoalSlot, true);
-        _popup.PopupEntity(Loc.GetString("hookah-coal-inserted"), ent, args.User);
+        _popup.PopupEntity(Loc.GetString(HookahCoalInserted), ent, args.User);
         UpdateAppearance(ent);
         args.Handled = true;
     }
@@ -197,7 +215,7 @@ public sealed class HookahSystem : EntitySystem
     {
         if (fuel.TobaccoSlot.Item != null)
         {
-            _popup.PopupEntity(Loc.GetString("hookah-tobacco-slot-full"), ent, args.User);
+            _popup.PopupEntity(Loc.GetString(HookahTobaccoSlotFull), ent, args.User);
             args.Handled = true;
             return;
         }
@@ -205,7 +223,7 @@ public sealed class HookahSystem : EntitySystem
         if (_itemSlots.TryInsert(ent, fuel.TobaccoSlot, args.Used, args.User))
         {
             _itemSlots.SetLock(ent, fuel.TobaccoSlot, true);
-            _popup.PopupEntity(Loc.GetString("hookah-tobacco-inserted"), ent, args.User);
+            _popup.PopupEntity(Loc.GetString(HookahTobaccoInserted), ent, args.User);
         }
 
         args.Handled = true;
@@ -249,7 +267,7 @@ public sealed class HookahSystem : EntitySystem
             BlockDuplicate = true,
         });
 
-        _popup.PopupEntity(Loc.GetString("hookah-drag-start"), ent, args.User);
+        _popup.PopupEntity(Loc.GetString(HookahDragStart), ent, args.User);
         args.Handled = true;
     }
 
@@ -289,7 +307,7 @@ public sealed class HookahSystem : EntitySystem
 
         Exhale(args.User, hookah);
 
-        _popup.PopupEntity(Loc.GetString("hookah-smoke"), ent, args.User);
+        _popup.PopupEntity(Loc.GetString(HookahSmoke), ent, args.User);
         args.Handled = true;
     }
 
@@ -297,7 +315,7 @@ public sealed class HookahSystem : EntitySystem
     {
         if (!hookah.Comp.IsLit)
         {
-            _popup.PopupEntity(Loc.GetString("hookah-not-lit"), hose, user);
+            _popup.PopupEntity(Loc.GetString(HookahNotLit), hose, user);
             return false;
         }
 
@@ -307,7 +325,7 @@ public sealed class HookahSystem : EntitySystem
         if (solution.Volume > FixedPoint2.Zero)
             return true;
 
-        _popup.PopupEntity(Loc.GetString("hookah-solution-empty"), hose, user);
+        _popup.PopupEntity(Loc.GetString(HookahSolutionEmpty), hose, user);
         return false;
     }
 
@@ -324,7 +342,7 @@ public sealed class HookahSystem : EntitySystem
 
         if (fuel.TobaccoSlot.Item is not { } tobacco || !IsTobacco(tobacco, fuel))
         {
-            _popup.PopupEntity(Loc.GetString("hookah-tobacco-empty"), hose, user);
+            _popup.PopupEntity(Loc.GetString(HookahTobaccoEmpty), hose, user);
             return false;
         }
 
@@ -349,7 +367,7 @@ public sealed class HookahSystem : EntitySystem
 
     private bool IsTobacco(EntityUid uid, SmokingFuelComponent fuel)
     {
-        return MetaData(uid).EntityPrototype?.ID == fuel.TobaccoId;
+        return MetaData(uid).EntityPrototype?.ID is { } id && id == fuel.TobaccoId;
     }
 
     private void Exhale(EntityUid user, HookahComponent hookah)
@@ -446,7 +464,7 @@ public sealed class HookahSystem : EntitySystem
 
             RemComp<JointVisualsComponent>(uid);
             _hands.TryDrop((container.Owner, hands), uid);
-            _popup.PopupEntity(Loc.GetString("hookah-hose-too-far"), container.Owner, container.Owner);
+            _popup.PopupEntity(Loc.GetString(HookahHoseTooFar), container.Owner, container.Owner);
         }
     }
 
@@ -497,7 +515,7 @@ public sealed class HookahSystem : EntitySystem
             !HasComp<HandsComponent>(container.Owner))
             return;
 
-        _popup.PopupEntity(Loc.GetString("hookah-coal-out"), container.Owner, container.Owner);
+        _popup.PopupEntity(Loc.GetString(HookahCoalOut), container.Owner, container.Owner);
     }
 
     private void SetLit(Entity<HookahComponent> ent, bool lit)
@@ -536,9 +554,9 @@ public sealed class HookahSystem : EntitySystem
             return;
 
         if (fuel.TobaccoPuffs > 0 || fuel.TobaccoSlot.Item != null)
-            args.PushText(Loc.GetString("hookah-examine-tobacco", ("puffs", fuel.TobaccoPuffs)));
+            args.PushText(Loc.GetString(HookahExamineTobacco, ("puffs", fuel.TobaccoPuffs)));
 
         if (ent.Comp.IsLit && fuel.CoalTime > 0f)
-            args.PushText(Loc.GetString("hookah-examine-coal", ("seconds", (int) fuel.CoalTime)));
+            args.PushText(Loc.GetString(HookahExamineCoal, ("seconds", (int) fuel.CoalTime)));
     }
 }
