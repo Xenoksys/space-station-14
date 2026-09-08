@@ -160,7 +160,7 @@ public sealed partial class ArenaLobbySystem : EntitySystem
             arenas.Add(new ArenaLobbyEntry
             {
                 ArenaId = id,
-                Name = LocalizeOrFallback(rule.DisplayName),
+                Name = Loc.GetString(rule.DisplayName),
                 Players = CountOccupied(rule),
                 MaxPlayers = rule.MaxPlayers,
                 Phase = rule.Phase,
