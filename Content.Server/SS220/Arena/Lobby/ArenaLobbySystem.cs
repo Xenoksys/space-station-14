@@ -180,8 +180,8 @@ public sealed partial class ArenaLobbySystem : EntitySystem
             templates.Add(new ArenaLobbyTemplate
             {
                 Id = proto.ID,
-                Name = LocalizeOrFallback(rule.DisplayName),
-                Description = LocalizeOrFallback(rule.Description),
+                Name = Loc.GetString(rule.DisplayName),
+                Description = Loc.GetString(rule.Description),
                 Category = rule.DisplayCategory,
                 MaxPlayers = rule.MaxPlayers,
             });
