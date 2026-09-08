@@ -23,7 +23,6 @@ namespace Content.Client.SS220.Administration.UI.Tabs.AdminTab
             ListOfTargetsButton.OnPressed += ListOfTargetsButtonOnPressed;
             AddTargetButton.OnWindowCreated += AddTargetButtonOnWindowCreated;
             CustomObjectivesFilter.OnToggled += OnCustomObjectivesFilterToggled;
-            IoCManager.Resolve<IClientConsoleHost>().ExecuteCommand("requestcustomobjectives");
         }
 
         protected override void ExitedTree()
@@ -61,7 +60,6 @@ namespace Content.Client.SS220.Administration.UI.Tabs.AdminTab
         {
             if (_selectedAntagonist is null)
                 return;
-
             var addObjectiveWindow = (AddObjectiveWindow) window;
             var antagSession = IoCManager.Resolve<IPlayerManager>().GetSessionById(_selectedAntagonist.SessionId);
             addObjectiveWindow.SetAntagonist(antagSession);
