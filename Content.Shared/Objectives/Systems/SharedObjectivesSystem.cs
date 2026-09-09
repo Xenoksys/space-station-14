@@ -168,7 +168,7 @@ public abstract class SharedObjectivesSystem : EntitySystem
             return null;
         }
 
-        return new ObjectiveInfo(title, description, comp.Icon, progress, HasComp<CustomObjectiveComponent>(uid));
+        return new ObjectiveInfo(title, description, comp.Icon, progress, HasComp<CustomObjectiveComponent>(uid) /* SS220 antag window tweaks */);
     }
 
     /// <summary>
