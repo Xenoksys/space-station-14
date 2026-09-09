@@ -190,11 +190,6 @@ public sealed partial class ArenaLobbySystem : EntitySystem
         return new ArenaLobbyEuiState(arenas, templates, _arenas.Count, _cfg.GetCVar(CCVars220.ArenaActiveLimit), hasOwnArena, GetCooldownRemaining(viewer.UserId));
     }
 
-    private string LocalizeOrFallback(string value)
-    {
-        return Loc.TryGetString(value, out var localized) ? localized : value;
-    }
-
     private int GetCooldownRemaining(NetUserId userId)
     {
         if (!_createCooldownUntil.TryGetValue(userId, out var until))
