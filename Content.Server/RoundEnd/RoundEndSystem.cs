@@ -8,6 +8,7 @@ using Content.Server.DeviceNetwork.Systems;
 using Content.Server.GameTicking;
 using Content.Server.Screens.Components;
 using Content.Server.Shuttles.Components;
+using Content.Server.Shuttles.Events;
 using Content.Server.Shuttles.Systems;
 using Content.Server.Station.Systems;
 using Content.Shared.Database;
@@ -55,6 +56,7 @@ namespace Content.Server.RoundEnd
         private CancellationTokenSource? _cooldownTokenSource = null;
         public TimeSpan? LastCountdownStart { get; set; } = null;
         public TimeSpan? ExpectedCountdownEnd { get; set; } = null;
+        public EntityUid? CountdownStation { get; private set; }
         public TimeSpan? ExpectedShuttleLength => ExpectedCountdownEnd - LastCountdownStart;
         public TimeSpan? ShuttleTimeLeft => ExpectedCountdownEnd - _gameTiming.CurTime;
 
@@ -113,6 +115,7 @@ namespace Content.Server.RoundEnd
 
             LastCountdownStart = null;
             ExpectedCountdownEnd = null;
+            CountdownStation = null;
             SetAutoCallTime();
             _autoCalledBefore = false;
             _autoCallEnabled = false;
@@ -125,6 +128,14 @@ namespace Content.Server.RoundEnd
         /// </summary>
         public EntityUid? GetStation()
         {
+            if (CountdownStation is { } countdownStation
+                && TryComp<StationDataComponent>(countdownStation, out var countdownData))
+            {
+                var countdownGrid = _stationSystem.GetLargestGrid((countdownStation, countdownData));
+                if (countdownGrid != null)
+                    return Transform(countdownGrid.Value).MapUid;
+            }
+
             AllEntityQuery<StationEmergencyShuttleComponent, StationDataComponent>().MoveNext(out var uid, out _, out var data);
             if (data == null)
                 return null;
@@ -200,7 +211,14 @@ namespace Content.Server.RoundEnd
             if (_countdownTokenSource != null)
                 return;
 
+            var station = ResolveCountdownStation(requester, machine);
+            var launchAttempt = new EmergencyShuttleLaunchAttemptEvent(station, _shuttle.GetShuttle(station));
+            RaiseLocalEvent(ref launchAttempt);
+            if (launchAttempt.Cancelled)
+                return;
+
             _countdownTokenSource = new();
+            CountdownStation = station;
             CantRecall = cantRecall;
 
             var what = machine != null ? $" with {ToPrettyString(machine.Value):entity} " : "";
@@ -238,7 +256,7 @@ namespace Content.Server.RoundEnd
             ExpectedCountdownEnd = _gameTiming.CurTime + countdownTime;
 
             // TODO full game saves
-            Timer.Spawn(countdownTime, _shuttle.DockEmergencyShuttle, _countdownTokenSource.Token);
+            Timer.Spawn(countdownTime, () => _shuttle.DockEmergencyShuttle(station), _countdownTokenSource.Token);
 
             ActivateCooldown();
             RaiseLocalEvent(RoundEndSystemChangedEvent.Default);
@@ -259,9 +277,24 @@ namespace Content.Server.RoundEnd
             }
         }
 
-        public void CancelRoundEndCountdown(EntityUid? requester = null, EntityUid? machine = null, bool forceRecall = false)
+        private EntityUid? ResolveCountdownStation(EntityUid? requester, EntityUid? machine)
+        {
+            if (requester != null)
+                return _stationSystem.GetOwningStation(requester.Value);
+
+            if (machine != null)
+                return _stationSystem.GetOwningStation(machine.Value);
+
+            var stations = _stationSystem.GetStations();
+            return stations.Count > 0 ? stations[0] : null;
+        }
+
+        public void CancelRoundEndCountdown(EntityUid? requester = null, EntityUid? machine = null, bool forceRecall = false, EntityUid? station = null)
         {
             if (_gameTicker.RunLevel != GameRunLevel.InRound)
+                return;
+
+            if (station != null && CountdownStation != null && CountdownStation != station)
                 return;
 
             if (!forceRecall && (CantRecall || _cooldownTokenSource != null))
@@ -306,6 +339,8 @@ namespace Content.Server.RoundEnd
                 };
                 _deviceNetworkSystem.QueuePacket(shuttle.Value, null, payload, net.TransmitFrequency);
             }
+
+            CountdownStation = null;
         }
 
         public void EndRound(TimeSpan? countdownTime = null)
@@ -313,6 +348,7 @@ namespace Content.Server.RoundEnd
             if (_gameTicker.RunLevel != GameRunLevel.InRound) return;
             LastCountdownStart = null;
             ExpectedCountdownEnd = null;
+            CountdownStation = null;
             RaiseLocalEvent(RoundEndSystemChangedEvent.Default);
             _gameTicker.EndRound();
             _countdownTokenSource?.Cancel();

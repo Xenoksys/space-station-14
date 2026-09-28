@@ -22,6 +22,8 @@ using System.Linq;
 using Content.Shared.Atmos.Components;
 using Content.Shared.DeviceNetwork.Events;
 using Content.Shared.DeviceNetwork.Components;
+using Content.Shared.SS220.MalfAI; // SS220 MalfAI
+using Content.Shared.Station;
 
 namespace Content.Server.Atmos.Monitor.Systems;
 
@@ -34,17 +36,18 @@ namespace Content.Server.Atmos.Monitor.Systems;
 // data key. In response, a packet will be transmitted
 // with the response type as its command, and the
 // response data in its data key.
-public sealed class AirAlarmSystem : EntitySystem
+public sealed partial class AirAlarmSystem : EntitySystem
 {
-    [Dependency] private readonly AccessReaderSystem _access = default!;
-    [Dependency] private readonly ISharedAdminLogManager _adminLogger = default!;
-    [Dependency] private readonly AtmosAlarmableSystem _atmosAlarmable = default!;
-    [Dependency] private readonly AtmosDeviceNetworkSystem _atmosDevNet = default!;
-    [Dependency] private readonly DeviceNetworkSystem _deviceNet = default!;
-    [Dependency] private readonly DeviceLinkSystem _deviceLink = default!;
-    [Dependency] private readonly DeviceListSystem _deviceList = default!;
-    [Dependency] private readonly PopupSystem _popup = default!;
-    [Dependency] private readonly UserInterfaceSystem _ui = default!;
+    [Dependency] private AccessReaderSystem _access = default!;
+    [Dependency] private ISharedAdminLogManager _adminLogger = default!;
+    [Dependency] private AtmosAlarmableSystem _atmosAlarmable = default!;
+    [Dependency] private AtmosDeviceNetworkSystem _atmosDevNet = default!;
+    [Dependency] private DeviceNetworkSystem _deviceNet = default!;
+    [Dependency] private DeviceLinkSystem _deviceLink = default!;
+    [Dependency] private DeviceListSystem _deviceList = default!;
+    [Dependency] private PopupSystem _popup = default!;
+    [Dependency] private UserInterfaceSystem _ui = default!;
+    [Dependency] private SharedStationSystem _station = default!; // SS220 MalfAI
 
     #region Device Network API
 
@@ -289,6 +292,14 @@ public sealed class AirAlarmSystem : EntitySystem
 
     private void OnUpdateAlarmMode(EntityUid uid, AirAlarmComponent component, AirAlarmUpdateAlarmModeMessage args)
     {
+        // SS220 MalfAI begin
+        if (args.Mode == AirAlarmMode.Flood && !IsFloodUnlocked(uid))
+        {
+            UpdateUI(uid, component);
+            return;
+        }
+        // SS220 MalfAI end
+
         if (AccessCheck(uid, args.Actor, component))
         {
             var addr = string.Empty;
@@ -350,7 +361,7 @@ public sealed class AirAlarmSystem : EntitySystem
     {
         if (!AccessCheck(uid, args.Actor, component))
         {
-           UpdateUI(uid, component);
+            UpdateUI(uid, component);
             return;
         }
 
@@ -416,7 +427,8 @@ public sealed class AirAlarmSystem : EntitySystem
             addr = netConn.Address;
         }
 
-        if (component.AutoMode)
+        // SS220 MalfAI: automatic mode changes must not cancel Flood.
+        if (component.AutoMode && component.CurrentMode != AirAlarmMode.Flood)
         {
             if (args.AlarmType == AtmosAlarmType.Danger)
             {
@@ -476,6 +488,14 @@ public sealed class AirAlarmSystem : EntitySystem
             mode = AirAlarmMode.Panic;
         }
 
+        // SS220 MalfAI begin
+        if (mode == AirAlarmMode.Flood && !IsFloodUnlocked(uid))
+        {
+            UpdateUI(uid, controller);
+            return;
+        }
+        // SS220 MalfAI end
+
 
         controller.CurrentMode = mode;
 
@@ -515,6 +535,17 @@ public sealed class AirAlarmSystem : EntitySystem
         // as other alarms
         SyncMode(uid, mode);
     }
+
+    // SS220 MalfAI begin
+    public bool IsFloodUnlocked(EntityUid uid)
+    {
+        if (Count<MalfAiAirFloodComponent>() == 0)
+            return false;
+
+        return _station.GetOwningStation(uid) is { } station
+            && HasComp<MalfAiAirFloodComponent>(station);
+    }
+    // SS220 MalfAI end
 
     /// <summary>
     ///     Sets device data. Practically a wrapper around the packet sending function, SetData.
@@ -676,7 +707,17 @@ public sealed class AirAlarmSystem : EntitySystem
         _ui.SetUiState(
             uid,
             SharedAirAlarmInterfaceKey.Key,
-            new AirAlarmUIState(devNet.Address, deviceCount, pressure, temperature, dataToSend, alarm.CurrentMode, highestAlarm.Value, alarm.AutoMode, alarm.PanicWireCut));
+            new AirAlarmUIState(
+                devNet.Address,
+                deviceCount,
+                pressure,
+                temperature,
+                dataToSend,
+                alarm.CurrentMode,
+                highestAlarm.Value,
+                alarm.AutoMode,
+                alarm.PanicWireCut,
+                IsFloodUnlocked(uid))); // SS220 MalfAI
     }
 
     private const float Delay = 8f;

@@ -60,6 +60,7 @@ public sealed class AirAlarmModeFactory
     private static IAirAlarmMode _fillMode = new AirAlarmFillMode();
     private static IAirAlarmMode _panicMode = new AirAlarmPanicMode();
     private static IAirAlarmMode _noneMode = new AirAlarmNoneMode();
+    private static IAirAlarmMode _floodMode = new AirAlarmFloodMode(); // SS220 MalfAI
 
     // still not a fan since ReplaceMode must have an allocation
     // but it's whatever
@@ -72,15 +73,16 @@ public sealed class AirAlarmModeFactory
             AirAlarmMode.Fill => _fillMode,
             AirAlarmMode.Panic => _panicMode,
             AirAlarmMode.None => _noneMode,
+            AirAlarmMode.Flood => _floodMode, // SS220 MalfAI
             _ => null
         };
     }
 }
 
 // like a tiny little EntitySystem
-public abstract class AirAlarmModeExecutor : IAirAlarmMode
+public abstract partial class AirAlarmModeExecutor : IAirAlarmMode
 {
-    [Dependency] public readonly IEntityManager EntityManager = default!;
+    [Dependency] public IEntityManager EntityManager = default!;
     public readonly DeviceNetworkSystem DeviceNetworkSystem;
     public readonly AirAlarmSystem AirAlarmSystem;
 
@@ -191,3 +193,24 @@ public sealed class AirAlarmFillMode : AirAlarmModeExecutor
         }
     }
 }
+
+// SS220 MalfAI begin
+public sealed class AirAlarmFloodMode : AirAlarmModeExecutor
+{
+    public override void Execute(EntityUid uid)
+    {
+        if (!EntityManager.TryGetComponent(uid, out AirAlarmComponent? alarm))
+            return;
+
+        foreach (var (addr, _) in alarm.VentData)
+        {
+            AirAlarmSystem.SetData(uid, addr, GasVentPumpData.FloodModePreset);
+        }
+
+        foreach (var (addr, _) in alarm.ScrubberData)
+        {
+            AirAlarmSystem.SetData(uid, addr, GasVentScrubberData.FloodModePreset);
+        }
+    }
+}
+// SS220 MalfAI end

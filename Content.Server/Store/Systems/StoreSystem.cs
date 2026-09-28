@@ -10,7 +10,7 @@ namespace Content.Server.Store.Systems;
 
 public sealed partial class StoreSystem : SharedStoreSystem
 {
-    [Dependency] private readonly StoreDiscountSystem _discount = default!; //SS220-nukeops-discount
+    [Dependency] private StoreDiscountSystem _discount = default!; //SS220-nukeops-discount
 
     public override void Initialize()
     {

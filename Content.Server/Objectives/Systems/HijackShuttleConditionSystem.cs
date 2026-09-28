@@ -8,16 +8,18 @@ using Content.Shared.Mobs.Components;
 using Content.Shared.Mobs.Systems;
 using Content.Shared.Objectives.Components;
 using Content.Shared.Roles;
+using Content.Shared.Station;
 using Robust.Shared.Player;
 
 namespace Content.Server.Objectives.Systems;
 
-public sealed class HijackShuttleConditionSystem : EntitySystem
+public sealed partial class HijackShuttleConditionSystem : EntitySystem
 {
-    [Dependency] private readonly EmergencyShuttleSystem _emergencyShuttle = default!;
-    [Dependency] private readonly SharedMindSystem _mind = default!;
-    [Dependency] private readonly SharedRoleSystem _role = default!;
-    [Dependency] private readonly MobStateSystem _mobState = default!;
+    [Dependency] private EmergencyShuttleSystem _emergencyShuttle = default!;
+    [Dependency] private SharedMindSystem _mind = default!;
+    [Dependency] private SharedRoleSystem _role = default!;
+    [Dependency] private MobStateSystem _mobState = default!;
+    [Dependency] private SharedStationSystem _station = default!;
 
     public override void Initialize()
     {
@@ -28,10 +30,10 @@ public sealed class HijackShuttleConditionSystem : EntitySystem
 
     private void OnGetProgress(EntityUid uid, HijackShuttleConditionComponent comp, ref ObjectiveGetProgressEvent args)
     {
-        args.Progress = GetProgress(args.MindId, args.Mind);
+        args.Progress = GetProgress(args.MindId, args.Mind, comp);
     }
 
-    private float GetProgress(EntityUid mindId, MindComponent mind)
+    private float GetProgress(EntityUid mindId, MindComponent mind, HijackShuttleConditionComponent comp)
     {
         // Not escaping alive if you're deleted/dead
         if (mind.OwnedEntity == null || _mind.IsCharacterDeadIc(mind))
@@ -45,20 +47,34 @@ public sealed class HijackShuttleConditionSystem : EntitySystem
         if (!_emergencyShuttle.EmergencyShuttleArrived)
             return 0f;
 
-        // Check hijack for each emergency shuttle
-        foreach (var stationData in EntityQuery<StationEmergencyShuttleComponent>())
+        // The AI does not board. Its objective is settled only after the shuttle leaves.
+        EntityUid? homeStation = null;
+        if (!comp.RequireOwnerOnShuttle)
         {
-            if (stationData.EmergencyShuttle == null)
+            if (!_emergencyShuttle.ShuttlesLeft)
+                return 0f;
+
+            homeStation = _station.GetOwningStation(mind.OwnedEntity.Value);
+            if (homeStation == null)
+                return 0f;
+        }
+
+        // Check hijack for each emergency shuttle
+        var shuttles = EntityQueryEnumerator<StationEmergencyShuttleComponent>();
+        while (shuttles.MoveNext(out var stationUid, out var stationData))
+        {
+            if (stationData.EmergencyShuttle == null || homeStation != null && stationUid != homeStation)
                 continue;
 
-            if (IsShuttleHijacked(stationData.EmergencyShuttle.Value, mindId))
+            // SS220 MalfAI: RequireOwnerOnShuttle is false for the AI, which never boards.
+            if (IsShuttleHijacked(stationData.EmergencyShuttle.Value, mindId, comp.RequireOwnerOnShuttle))
                 return 1f;
         }
 
         return 0f;
     }
 
-    private bool IsShuttleHijacked(EntityUid shuttleGridId, EntityUid mindId)
+    private bool IsShuttleHijacked(EntityUid shuttleGridId, EntityUid mindId, bool requireOwnerOnShuttle)
     {
         var gridPlayers = Filter.BroadcastGrid(shuttleGridId).Recipients;
         var humanoids = GetEntityQuery<HumanoidProfileComponent>();
@@ -99,6 +115,6 @@ public sealed class HijackShuttleConditionSystem : EntitySystem
             return false;
         }
 
-        return agentOnShuttle;
+        return !requireOwnerOnShuttle || agentOnShuttle;
     }
 }

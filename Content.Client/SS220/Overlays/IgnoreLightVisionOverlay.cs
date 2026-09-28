@@ -33,6 +33,11 @@ public abstract partial class IgnoreLightVisionOverlay : Overlay
     private const float STEALTH_VISION_TRESHHOLD = -0.3f;
     public override OverlaySpace Space => OverlaySpace.WorldSpace;
 
+    private readonly HashSet<Entity<MobStateComponent>> _entities = new();
+    private readonly HashSet<Entity<MobStateComponent>> _entitiesClose = new();
+
+    private static readonly string[] BlacklistComponentNames = ["DarkReaper", "Devourer"];
+
     public IgnoreLightVisionOverlay(float showRadius, float closeShowRadius)
     {
         IoCManager.InjectDependencies(this);
@@ -49,23 +54,25 @@ public abstract partial class IgnoreLightVisionOverlay : Overlay
     {
         if (PlayerManager.LocalEntity == null)
             return;
-        if (!Entity.TryGetComponent<MobStateComponent>(PlayerManager.LocalEntity, out var mobstateComp))
+        if (Entity.TryGetComponent<MobStateComponent>(PlayerManager.LocalEntity, out var mobstateComp)
+            && mobstateComp.CurrentState != MobState.Alive)
             return;
-        if (mobstateComp.CurrentState != MobState.Alive)
+
+        var eye = args.Viewport.Eye;
+        if (eye == null)
             return;
-        if (!Entity.TryGetComponent<TransformComponent>(PlayerManager.LocalEntity, out var playerTransform))
-            return;
+        var eyeRot = eye.Rotation;
 
         var handle = args.WorldHandle;
-        var eye = args.Viewport.Eye;
-        var eyeRot = eye?.Rotation ?? default;
 
-        var entities = _entityLookup.GetEntitiesInRange<MobStateComponent>(playerTransform.Coordinates, ShowRadius);
-        var entitiesClose = _entityLookup.GetEntitiesInRange<MobStateComponent>(playerTransform.Coordinates, ShowCloseRadius);
+        _entities.Clear();
+        _entitiesClose.Clear();
+        _entityLookup.GetEntitiesInRange(eye.Position, ShowRadius, _entities);
+        _entityLookup.GetEntitiesInRange(eye.Position, ShowCloseRadius, _entitiesClose);
 
-        foreach (var (uid, stateComp) in entities)
+        foreach (var (uid, stateComp) in _entities)
         {
-            var isCloseToOwner = entitiesClose.Contains((uid, stateComp));
+            var isCloseToOwner = _entitiesClose.Contains((uid, stateComp));
 
             if (CantBeRendered(uid, out var sprite, out var xform))
                 continue;
@@ -77,7 +84,7 @@ public abstract partial class IgnoreLightVisionOverlay : Overlay
                 if (CantBeVisibleInContainer(uid, isCloseToOwner))
                     continue;
 
-            Render((uid, sprite, xform), eye?.Position.MapId, handle, eyeRot);
+            Render((uid, sprite, xform), eye.Position.MapId, handle, eyeRot);
         }
         handle.SetTransform(Matrix3x2.Identity);
     }
@@ -85,11 +92,6 @@ public abstract partial class IgnoreLightVisionOverlay : Overlay
     protected abstract void Render(Entity<SpriteComponent, TransformComponent> ent,
                         MapId? map, DrawingHandleWorld handle, Angle eyeRot);
 
-    /// <summary>
-    ///  function which defines what entities can be seen, f.e. pai or human, bread dog or reaper
-    ///  Also contains list of components which defines it
-    /// </summary>
-    /// <returns> True if entities could be seen by thermals. Without any other obstacles </returns>
     private bool CantBeSeen(Entity<MobStateComponent> target)
     {
         var states = target.Comp.AllowedStates;
@@ -139,8 +141,6 @@ public abstract partial class IgnoreLightVisionOverlay : Overlay
     /// <returns>True if entities could be seen by thermals. Without any other obstacles </returns>
     private bool CantBeVisibleInContainer(EntityUid target, bool isCloseToOwner)
     {
-        var blacklistComponentNames = new List<string>() { "DarkReaper", "Devourer" };
-
         if (isCloseToOwner == false)
             return true;
 
@@ -151,7 +151,7 @@ public abstract partial class IgnoreLightVisionOverlay : Overlay
 
             if (currentEntUid == PlayerManager.LocalEntity)
                 return true;
-            if (HasComponentFromList(currentEntUid, blacklistComponentNames))
+            if (HasComponentFromList(currentEntUid, BlacklistComponentNames))
                 return true;
         }
 
@@ -161,7 +161,7 @@ public abstract partial class IgnoreLightVisionOverlay : Overlay
     /// <summary> Checks if entity has a components from list </summary>
     /// <returns> True if entity has any of the listed components </returns>
     /// <exception cref="Exception"> Throw exception if List contains false comp name</exception>
-    protected bool HasComponentFromList(EntityUid target, List<string> blacklistComponentNames)
+    protected bool HasComponentFromList(EntityUid target, string[] blacklistComponentNames)
     {
         foreach (var compName in blacklistComponentNames)
         {

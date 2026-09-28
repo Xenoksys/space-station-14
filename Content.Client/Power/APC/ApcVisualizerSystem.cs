@@ -3,14 +3,20 @@ using Robust.Client.GameObjects;
 
 namespace Content.Client.Power.APC;
 
-public sealed class ApcVisualizerSystem : VisualizerSystem<ApcVisualsComponent>
+public sealed partial class ApcVisualizerSystem : VisualizerSystem<ApcVisualsComponent>
 {
-    [Dependency] private readonly SharedPointLightSystem _lights = default!;
+    [Dependency] private SharedPointLightSystem _lights = default!;
 
     protected override void OnAppearanceChange(EntityUid uid, ApcVisualsComponent comp, ref AppearanceChangeEvent args)
     {
         if (args.Sprite == null)
             return;
+
+        // SS220 MalfAI begin
+        if (AppearanceSystem.TryGetData<bool>(uid, ApcVisuals.Hacked, out var hacked, args.Component)
+            && SpriteSystem.LayerMapTryGet((uid, args.Sprite), ApcVisualLayers.ChargeState, out _, false))
+            SpriteSystem.LayerSetColor((uid, args.Sprite), ApcVisualLayers.ChargeState, hacked ? Color.SkyBlue : Color.White);
+        // SS220 MalfAI end
 
         // get the mapped layer index of the first lock layer and the first channel layer
         var lockIndicatorOverlayStart = SpriteSystem.LayerMapGet((uid, args.Sprite), ApcVisualLayers.InterfaceLock);
