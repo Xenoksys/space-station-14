@@ -77,6 +77,9 @@ public sealed partial class EmergencyShuttleSystem
     /// </summary>
     private bool _launchedShuttles;
 
+    private readonly HashSet<EntityUid> _earlyLaunchAuthorizedStations = new();
+    private readonly HashSet<EntityUid> _shuttlesLeftStations = new();
+
     /// <summary>
     /// Have the emergency shuttles left for CentCom?
     /// </summary>
@@ -117,7 +120,7 @@ public sealed partial class EmergencyShuttleSystem
     private void OnEmagged(EntityUid uid, EmergencyShuttleConsoleComponent component, ref GotEmaggedEvent args)
     {
         _logger.Add(LogType.EmergencyShuttle, LogImpact.Extreme, $"{ToPrettyString(args.UserUid):player} emagged shuttle console for early launch");
-        EarlyLaunch();
+        EarlyLaunch(uid);
     }
     //SS220 Return hijack objective end
 
@@ -238,6 +241,8 @@ public sealed partial class EmergencyShuttleSystem
         if (!ShuttlesLeft && _consoleAccumulator <= 0f)
         {
             ShuttlesLeft = true;
+            if (_roundEnd.CountdownStation is { } countdownStation)
+                _shuttlesLeftStations.Add(countdownStation);
             _chatSystem.DispatchGlobalAnnouncement(Loc.GetString("emergency-shuttle-left", ("transitTime", $"{TransitTime:0}")));
 
             Timer.Spawn((int)(TransitTime * 1000) + _bufferTime.Milliseconds, () => _roundEnd.EndRound(), _roundEndCancelToken?.Token ?? default);
@@ -297,7 +302,7 @@ public sealed partial class EmergencyShuttleSystem
         _logger.Add(LogType.EmergencyShuttle, LogImpact.High, $"Emergency shuttle early launch REPEAL by {args.Actor:user}");
         var remaining = component.AuthorizationsRequired - component.AuthorizedEntities.Count;
         _chatSystem.DispatchGlobalAnnouncement(Loc.GetString("emergency-shuttle-console-auth-revoked", ("remaining", remaining)));
-        CheckForLaunch(component);
+        CheckForLaunch(uid, component, out _);
         UpdateAllEmergencyConsoles();
     }
 
@@ -311,14 +316,17 @@ public sealed partial class EmergencyShuttleSystem
             return;
         }
 
-        var idCardUid = idCard.Owner;
+        TryAuthorizeEarlyLaunch(uid, component, idCard.Owner, MetaData(idCard).EntityName);
+    }
 
+    internal bool TryAuthorizeEarlyLaunch(EntityUid uid, EmergencyShuttleConsoleComponent component, EntityUid idCardUid, string name)
+    {
         if (component.AuthorizedEntities.ContainsKey(idCardUid))
-            return;
+            return false;
 
-        component.AuthorizedEntities[idCardUid] = MetaData(idCard).EntityName;
+        component.AuthorizedEntities[idCardUid] = name;
 
-        _logger.Add(LogType.EmergencyShuttle, LogImpact.High, $"Emergency shuttle early launch AUTH by {args.Actor:user}");
+        _logger.Add(LogType.EmergencyShuttle, LogImpact.High, $"Emergency shuttle early launch AUTH by {idCardUid:user}");
         var remaining = component.AuthorizationsRequired - component.AuthorizedEntities.Count;
 
         if (remaining > 0)
@@ -326,10 +334,20 @@ public sealed partial class EmergencyShuttleSystem
                 Loc.GetString("emergency-shuttle-console-auth-left", ("remaining", remaining)),
                 playSound: false, colorOverride: DangerColor);
 
-        if (!CheckForLaunch(component))
+        if (!CheckForLaunch(uid, component, out var vetoed))
+        {
+            if (vetoed)
+            {
+                component.AuthorizedEntities.Remove(idCardUid);
+                UpdateAllEmergencyConsoles();
+                return false;
+            }
+
             _audio.PlayGlobal("/Audio/Misc/notice1.ogg", Filter.Broadcast(), recordReplay: true);
+        }
 
         UpdateAllEmergencyConsoles();
+        return true;
     }
 
     private void CleanupEmergencyConsole()
@@ -339,6 +357,8 @@ public sealed partial class EmergencyShuttleSystem
         _announced = false;
         ShuttlesLeft = false;
         _launchedShuttles = false;
+        _earlyLaunchAuthorizedStations.Clear();
+        _shuttlesLeftStations.Clear();
         _consoleAccumulator = float.MinValue;
         EarlyLaunchAuthorized = false;
         EmergencyShuttleArrived = false;
@@ -378,36 +398,84 @@ public sealed partial class EmergencyShuttleSystem
             );
     }
 
-    private bool CheckForLaunch(EmergencyShuttleConsoleComponent component)
+    public bool IsEarlyLaunchAuthorized(EntityUid? station)
     {
-        if (component.AuthorizedEntities.Count < component.AuthorizationsRequired || EarlyLaunchAuthorized)
-            return false;
+        if (station == null)
+            return EarlyLaunchAuthorized;
 
-        EarlyLaunch();
-        return true;
+        if (_earlyLaunchAuthorizedStations.Contains(station.Value))
+            return true;
+
+        return _station.GetStations().Count == 1 && EarlyLaunchAuthorized;
+    }
+
+    public bool IsShuttleDeparted(EntityUid? station)
+    {
+        if (station == null)
+            return ShuttlesLeft;
+
+        if (_shuttlesLeftStations.Contains(station.Value))
+            return true;
+
+        return _station.GetStations().Count == 1 && ShuttlesLeft;
+    }
+
+    private bool CheckForLaunch(EntityUid uid, EmergencyShuttleConsoleComponent component, out bool vetoed)
+    {
+        vetoed = false;
+        if (component.AuthorizedEntities.Count < component.AuthorizationsRequired
+            || IsEarlyLaunchAuthorized(_station.GetOwningStation(uid)))
+        {
+            return false;
+        }
+
+        return TryEarlyLaunch(uid, out vetoed);
     }
 
     /// <summary>
+
     /// Attempts to early launch the emergency shuttle if not already done.
     /// </summary>
-    public bool EarlyLaunch()
+    public bool EarlyLaunch(EntityUid? source = null)
     {
-        if (EarlyLaunchAuthorized || !EmergencyShuttleArrived || _consoleAccumulator <= _authorizeTime) return false;
+        return TryEarlyLaunch(source, out _);
+    }
+
+    private bool TryEarlyLaunch(EntityUid? source, out bool vetoed)
+    {
+        vetoed = false;
+        EntityUid? station = null;
+        EntityUid? shuttle = null;
+        ResolveLaunchTarget(source, ref station, ref shuttle);
+
+        if (IsEarlyLaunchAuthorized(station) || !EmergencyShuttleArrived || _consoleAccumulator <= _authorizeTime)
+            return false;
+
+        var attempt = new EmergencyShuttleEarlyLaunchAttemptEvent(station, shuttle, false);
+        RaiseLocalEvent(ref attempt);
+        if (attempt.Cancelled)
+        {
+            vetoed = true;
+            return false;
+        }
 
         _logger.Add(LogType.EmergencyShuttle, LogImpact.High, $"Emergency shuttle launch authorized");
         _consoleAccumulator = _authorizeTime;
         EarlyLaunchAuthorized = true;
+        if (station != null)
+            _earlyLaunchAuthorizedStations.Add(station.Value);
         RaiseLocalEvent(new EmergencyShuttleAuthorizedEvent());
         AnnounceLaunch();
         UpdateAllEmergencyConsoles();
 
         var time = TimeSpan.FromSeconds(_authorizeTime);
-        var shuttle = GetShuttle();
-        if (shuttle != null && TryComp<DeviceNetworkComponent>(shuttle, out var net))
+
+        var targetShuttle = GetShuttle(station);
+        if (targetShuttle != null && TryComp<DeviceNetworkComponent>(targetShuttle, out var net))
         {
             var payload = new NetworkPayload
             {
-                [ShuttleTimerMasks.ShuttleMap] = shuttle,
+                [ShuttleTimerMasks.ShuttleMap] = targetShuttle,
                 [ShuttleTimerMasks.SourceMap] = _roundEnd.GetStation(),
                 [ShuttleTimerMasks.DestMap] = _roundEnd.GetCentcomm(),
                 [ShuttleTimerMasks.ShuttleTime] = time,
@@ -415,10 +483,45 @@ public sealed partial class EmergencyShuttleSystem
                 [ShuttleTimerMasks.DestTime] = time + TimeSpan.FromSeconds(TransitTime),
                 [ShuttleTimerMasks.Docked] = true
             };
-            _deviceNetworkSystem.QueuePacket(shuttle.Value, null, payload, net.TransmitFrequency);
+            _deviceNetworkSystem.QueuePacket(targetShuttle.Value, null, payload, net.TransmitFrequency);
         }
 
         return true;
+    }
+
+    private void ResolveLaunchTarget(EntityUid? source, ref EntityUid? station, ref EntityUid? shuttle)
+    {
+        if (station == null && source != null)
+            station = _station.GetOwningStation(source.Value);
+
+        if (station == null && shuttle == null)
+        {
+            var query = AllEntityQuery<StationEmergencyShuttleComponent>();
+            if (query.MoveNext(out var owner, out var component))
+            {
+                station = owner;
+                shuttle = component.EmergencyShuttle;
+            }
+        }
+
+        if (shuttle == null && station != null)
+        {
+            if (TryComp<StationEmergencyShuttleComponent>(station.Value, out var component))
+                shuttle = component.EmergencyShuttle;
+        }
+
+        if (station != null || shuttle == null)
+            return;
+
+        var shuttleQuery = AllEntityQuery<StationEmergencyShuttleComponent>();
+        while (shuttleQuery.MoveNext(out var owner, out var component))
+        {
+            if (component.EmergencyShuttle == shuttle)
+            {
+                station = owner;
+            return;
+            }
+        }
     }
 
     private void AnnounceLaunch()
