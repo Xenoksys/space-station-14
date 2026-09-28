@@ -73,7 +73,12 @@ public sealed class StationAiOverlay : Overlay
             {
                 _accumulator = MathF.Max(0f, _accumulator + _updateRate);
                 _visibleTiles.Clear();
-                _entManager.System<StationAiVisionSystem>().GetView((gridUid, broadphase, grid), worldBounds, _visibleTiles);
+                var vision = _entManager.System<StationAiVisionSystem>();
+                vision.GetView(
+                    (gridUid, broadphase, grid),
+                    worldBounds,
+                    _visibleTiles,
+                    expansionSize: vision.GetExpansionSize(gridUid));
             }
 
             var gridMatrix = xforms.GetWorldMatrix(gridUid);

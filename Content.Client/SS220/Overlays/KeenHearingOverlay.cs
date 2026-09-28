@@ -17,7 +17,7 @@ public sealed class KeenHearingOverlay : IgnoreLightVisionOverlay
     private readonly SpriteSpecifier _sprite;
     private Texture _texture;
 
-    private readonly List<string> _blacklistComponentNames = new(){"DarkReaper"};
+    private readonly string[] _blacklistComponentNames = ["DarkReaper"];
 
     public KeenHearingOverlay(float showRadius, float closeShowRadius) : base(showRadius, closeShowRadius)
     {
