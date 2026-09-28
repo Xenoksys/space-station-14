@@ -123,8 +123,20 @@ public sealed partial class EmergencyShuttleSystem : SharedEmergencyShuttleSyste
     /// <summary>
     ///     Attempts to get the EntityUid of the emergency shuttle
     /// </summary>
-    public EntityUid? GetShuttle()
+    public EntityUid? GetShuttle(EntityUid? station = null)
     {
+        if (station != null)
+        {
+            if (TryComp<StationEmergencyShuttleComponent>(station.Value, out var stationShuttle)
+                && stationShuttle.EmergencyShuttle is { } stationShuttleEntity
+                && Exists(stationShuttleEntity))
+            {
+                return stationShuttleEntity;
+            }
+
+            return null;
+        }
+
         AllEntityQuery<EmergencyShuttleComponent>().MoveNext(out var shuttle, out _);
         return shuttle;
     }
@@ -429,7 +441,7 @@ public sealed partial class EmergencyShuttleSystem : SharedEmergencyShuttleSyste
     /// <remarks>
     /// If the emergency shuttle is disabled, this immediately ends the round.
     /// </remarks>
-    public void DockEmergencyShuttle()
+    public void DockEmergencyShuttle(EntityUid? station = null)
     {
         if (EmergencyShuttleArrived)
             return;
@@ -440,8 +452,16 @@ public sealed partial class EmergencyShuttleSystem : SharedEmergencyShuttleSyste
             return;
         }
 
+        station ??= _roundEnd.CountdownStation;
+        if (station != null)
+        {
+            var launchAttempt = new EmergencyShuttleLaunchAttemptEvent(station, GetShuttle(station));
+            RaiseLocalEvent(ref launchAttempt);
+            if (launchAttempt.Cancelled)
+                return;
+        }
+
         _consoleAccumulator = ConfigManager.GetCVar(CCVars.EmergencyShuttleDockTime);
-        EmergencyShuttleArrived = true;
 
         var query = AllEntityQuery<StationEmergencyShuttleComponent>();
 
@@ -449,9 +469,17 @@ public sealed partial class EmergencyShuttleSystem : SharedEmergencyShuttleSyste
 
         while (query.MoveNext(out var uid, out var comp))
         {
+            if (station != null && uid != station)
+                continue;
+
             if (DockSingleEmergencyShuttle(uid, comp) is { } dockResult)
                 dockResults.Add(dockResult);
         }
+
+        if (dockResults.Count == 0)
+            return;
+
+        EmergencyShuttleArrived = true;
 
         // Make the shuttle wait longer if it couldn't dock in the normal spot.
         // We have to handle the possibility of there being multiple stations, so since the shuttle timer is global,
