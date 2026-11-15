@@ -14,7 +14,7 @@ using Robust.Shared.Toolshed;
 
 namespace Content.Server.SS220.MalfAI;
 
-[ToolshedCommand(Name = "malfai_make"), AdminCommand(AdminFlags.Admin)]
+[ToolshedCommand(Name = "malfai_make"), AdminCommand(AdminFlags.Fun)]
 public sealed class MalfAiMakeCommand : ToolshedCommand
 {
     [Dependency] private IAdminLogManager _admin = default!;
